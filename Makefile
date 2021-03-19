@@ -32,4 +32,4 @@ Project:$(objs)
 	
 .PHONY:clean
 clean:	
-	rm -f monitor $(objs) $(deps) *.d 
+	rm -f Project $(objs) $(deps) *.d 
