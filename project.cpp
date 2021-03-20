@@ -78,9 +78,9 @@ void Monitor::execute_command(char *command[]){
 }
 namespace Project{
     ostream& operator<<(ostream& out,const Monitor& m){
-        out<<"Process "<<setw(6)<<m.get_pid()<<" : time elaspsed: "<<m.get_timeElapsed()<<'\n';
-        out<<setfill(' ')<<setw(30)<<"user time   :"<<m.get_userTime()<<'\n';
-        out<<setfill(' ')<<setw(30)<<"system time :"<<m.get_systemTime()<<'\n';
+        out<<"Process "<<setw(6)<<m.get_pid()<<" : time elapsed: "<<m.get_timeElapsed()<<'\n';
+        out<<setfill(' ')<<setw(31)<<"user time   : "<<m.get_userTime()<<'\n';
+        out<<setfill(' ')<<setw(31)<<"system time : "<<m.get_systemTime()<<'\n';
         return out;
     }
 }
