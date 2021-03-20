@@ -36,7 +36,7 @@ namespace Project{
         void set_userTime(clock_t time);
         void set_systermTime(clock_t time);
         void set_timeElapsed(clock_t time);
-        void set_all(int pid,clock_t use_time,clock_t system_time,clock_t time_elasped);
+        void set_all(int pid,clock_t use_time,clock_t system_time,clock_t time_elapsed);
         void execute_command(char *command[]);
         int get_pid() const;
         double get_userTime() const;

@@ -3,10 +3,10 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
-#include <sys/times.h>
 #include <sys/types.h>
 #include <iomanip>
 #include <cstring>
+#include <stdexcept>
 using namespace Project;
 using namespace std;
 
@@ -28,7 +28,7 @@ void Monitor::set_timeElapsed(clock_t time){
     this->time_elapsed=getTick(time);
 }
 
-void Monitor::set_all(int pid,clock_t use_time,clock_t system_time,clock_t time_elasped){
+void Monitor::set_all(int pid,clock_t use_time,clock_t system_time,clock_t time_elapsed){
 
 }
 
@@ -47,17 +47,19 @@ double Monitor::get_timeElapsed() const{
 void Monitor::execute_command(char *command[]){
     int process;
     int status;
+
     start=times(&t_start);
     process=fork();
     if(process<0){
         status=-1;
     }
     else if(process==0){    
+        signal(SIGINT, SIG_DFL); //Default handle every child process
         execvp(command[0],command);
-        cout<<"fail";
+        throw invalid_argument("Fail Child Process\n");//cout<<"fail";
     }
     else{
-        while(waitpid(process,&status,0)<0){
+        while(waitpid(process,&status,0)<0){ //also can implemented by signal() SIGCHILD  
             if(errno!=EINTR){
                 status=-1;
                 break;
