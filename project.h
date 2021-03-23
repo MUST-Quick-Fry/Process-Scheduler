@@ -32,8 +32,6 @@ namespace Project{
         Monitor(char *command[]):command(command){
             execute_command(command);
         };
-        void static cmd_TSTP(int sig);
-        void static cmd_CONT(int sig);
         void set_pid(int pid);
         void set_userTime(clock_t time);
         void set_systermTime(clock_t time);
