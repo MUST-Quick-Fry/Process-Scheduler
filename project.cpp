@@ -15,6 +15,16 @@ double Monitor::getTick(clock_t time){
     return (double)time/tps;
 }
 
+void Monitor::cmd_TSTP(int sig){
+    kill(get_pid(), SIGTSTP);
+    cout << "The Job is suspended ..." << endl;
+}
+
+void Monitor::cmd_CONT(int sig){
+    kill(get_pid(), SIGCONT);
+    cout << "The Job resumes ... " << endl;
+}
+
 void Monitor::set_pid(int pid){
     this->process_pid=pid;
 }
@@ -47,9 +57,10 @@ double Monitor::get_timeElapsed() const{
 void Monitor::execute_command(char *command[]){
     int process;
     int status;
-
+    
     start=times(&t_start);
     process=fork();
+
     if(process<0){
         status=-1;
     }
@@ -59,15 +70,22 @@ void Monitor::execute_command(char *command[]){
         throw invalid_argument("Fail Child Process\n");//cout<<"fail";
     }
     else{
+        set_pid(process);
+        
         while(waitpid(process,&status,0)<0){ //also can implemented by signal() SIGCHILD  
+
+            signal(SIGTSTP, cmd_TSTP);
+            signal(SIGCONT, cmd_CONT);
+
             if(errno!=EINTR){
                 status=-1;
                 break;
             }
         }
     }
-    end=times(&t_end);
-    set_pid(process);
+    
+    // calculate time
+    end=times(&t_end);  
     set_timeElapsed(end-start);
     set_userTime(t_end.tms_cutime);
     set_systermTime(t_end.tms_cstime);
