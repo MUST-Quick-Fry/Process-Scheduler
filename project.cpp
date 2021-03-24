@@ -12,21 +12,30 @@ using namespace std;
 
 static int sig_pid = 0;
 
-static int quit = 0;
-
-bool flag=false;
-
-static void cmd_TSTP(int sig){
+static void sig_handler(int sig){
     std::cout << std::endl;
-    flag=true;
-    std::cout << "The Job is suspended ..." << std::endl;
-    kill(sig_pid, SIGTSTP);
+    if(sig==SIGTSTP){
+        std::cout << "The Job is suspended ..." << std::endl;
+        kill(sig_pid, SIGTSTP);            
+        signal(SIGTSTP, sig_handler);
+    }
+    else if(sig==SIGCONT){
+        std::cout << "The Job resumes ... " << std::endl;
+        kill(sig_pid, SIGCONT);
+        signal(SIGCONT, sig_handler);
+    }
+    else if(sig==SIGTERM){
+        std::cout << "Terminate the Child process !!" << std::endl;
+        kill(sig_pid, SIGTERM);
+        signal(SIGTERM, sig_handler);
+    }
 }
 
 static void cmd_CONT(int sig){
     std::cout << std::endl;
     std::cout << "The Job resumes ... " << std::endl;
     kill(sig_pid, SIGCONT);
+    signal(SIGCONT, cmd_CONT);
 }
 
 static void cmd_KILL(int sig){
@@ -34,7 +43,7 @@ static void cmd_KILL(int sig){
     std::cout << std::endl;
     std::cout << "Terminate the Child process !!" << std::endl;
     kill(sig_pid, SIGTERM);
-    quit = 1;
+    signal(SIGTERM, cmd_KILL);
 }
 
 double Monitor::getTick(clock_t time){
@@ -87,15 +96,13 @@ void Monitor::execute_command(char *command[]){
         throw invalid_argument("Fail to execute Child Process!\n");
     }
     else{
+        int status;
         set_pid(process);
         sig_pid = get_pid();
-        
-	    while(!quit){
-	    // listen to cmd signal	
-            signal(SIGTSTP, cmd_TSTP);
-            signal(SIGCONT, cmd_CONT);
-            signal(SIGTERM, cmd_KILL);
-        }
+        signal(SIGTSTP, sig_handler);
+        signal(SIGCONT, sig_handler);
+        signal(SIGTERM, sig_handler);
+        waitpid(sig_pid,&status,0);
 
 	// quit loop if the child process has been terminated!
     }
@@ -106,7 +113,7 @@ void Monitor::execute_command(char *command[]){
     set_userTime(t_end.tms_cutime);
     set_systermTime(t_end.tms_cstime);
     cout << endl; 
-    sleep(3);
+    //sleep(3);
     cout << "Terminate the Parent process !" << endl;
     cout<<*this;
 }
