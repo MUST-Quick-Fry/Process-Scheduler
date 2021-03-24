@@ -10,6 +10,5 @@ int main(int argc, char * argv[]){
         argv[i-1]=argv[i];
     argv[argc-1]=NULL;
     Monitor job(argv);     
-    cout<<job;
     return 0;
 }

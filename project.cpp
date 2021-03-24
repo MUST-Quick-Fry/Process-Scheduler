@@ -7,13 +7,18 @@
 #include <iomanip>
 #include <cstring>
 #include <stdexcept>
+using namespace Project;
+using namespace std;
 
 static int sig_pid = 0;
 
 static int quit = 0;
 
+bool flag=false;
+
 static void cmd_TSTP(int sig){
     std::cout << std::endl;
+    flag=true;
     std::cout << "The Job is suspended ..." << std::endl;
     kill(sig_pid, SIGTSTP);
 }
@@ -24,14 +29,6 @@ static void cmd_CONT(int sig){
     kill(sig_pid, SIGCONT);
 }
 
-static void cmd_QUIT(int sig){
-    int status;
-    waitpid(sig_pid, &status, 0);
-    std::cout << std::endl;
-    std::cout << "Child Process is finished !" << std::endl;
-    quit = 1;
-}
-
 static void cmd_KILL(int sig){
     int status;
     std::cout << std::endl;
@@ -39,9 +36,6 @@ static void cmd_KILL(int sig){
     kill(sig_pid, SIGTERM);
     quit = 1;
 }
-
-using namespace Project;
-using namespace std;
 
 double Monitor::getTick(clock_t time){
     long tps=sysconf(_SC_CLK_TCK);
@@ -96,14 +90,11 @@ void Monitor::execute_command(char *command[]){
         set_pid(process);
         sig_pid = get_pid();
         
-	while(!quit){
-	    
+	    while(!quit){
 	    // listen to cmd signal	
             signal(SIGTSTP, cmd_TSTP);
             signal(SIGCONT, cmd_CONT);
-	    signal(SIGCHLD, cmd_QUIT);
             signal(SIGTERM, cmd_KILL);
-
         }
 
 	// quit loop if the child process has been terminated!
@@ -114,10 +105,10 @@ void Monitor::execute_command(char *command[]){
     set_timeElapsed(end-start);
     set_userTime(t_end.tms_cutime);
     set_systermTime(t_end.tms_cstime);
-   
     cout << endl; 
     sleep(3);
     cout << "Terminate the Parent process !" << endl;
+    cout<<*this;
 }
 
 namespace Project{
