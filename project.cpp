@@ -10,40 +10,25 @@
 using namespace Project;
 using namespace std;
 
-static int sig_pid = 0;
+static int sig_pid = 0; // child process pid
 
 static void sig_handler(int sig){
-    std::cout << std::endl;
+    cout << endl;
     if(sig==SIGTSTP){
-        std::cout << "The Job is suspended ..." << std::endl;
+        cout << "The Job is suspended ..." << endl;
         kill(sig_pid, SIGTSTP);            
         signal(SIGTSTP, sig_handler);
     }
     else if(sig==SIGCONT){
-        std::cout << "The Job resumes ... " << std::endl;
+        cout << "The Job resumes ... " << endl;
         kill(sig_pid, SIGCONT);
         signal(SIGCONT, sig_handler);
     }
     else if(sig==SIGTERM){
-        std::cout << "Terminate the Child process !!" << std::endl;
+        cout << "The Job has been terminated !!" << endl;
         kill(sig_pid, SIGTERM);
         signal(SIGTERM, sig_handler);
     }
-}
-
-static void cmd_CONT(int sig){
-    std::cout << std::endl;
-    std::cout << "The Job resumes ... " << std::endl;
-    kill(sig_pid, SIGCONT);
-    signal(SIGCONT, cmd_CONT);
-}
-
-static void cmd_KILL(int sig){
-    int status;
-    std::cout << std::endl;
-    std::cout << "Terminate the Child process !!" << std::endl;
-    kill(sig_pid, SIGTERM);
-    signal(SIGTERM, cmd_KILL);
 }
 
 double Monitor::getTick(clock_t time){
@@ -84,18 +69,23 @@ void Monitor::execute_command(char *command[]){
     int process;
     int status;
     
+    cout << "Job Process Start !" << endl;
+    cout << endl;
+
     start = times(&t_start);
     process = fork();
 
     if(process < 0){
+	// error
         status = -1;
     }
     else if(process == 0){ 
-        //signal(SIGINT, SIG_DFL); //Default handle every child process
+        // child process
         execvp(command[0],command);
         throw invalid_argument("Fail to execute Child Process!\n");
     }
     else{
+	// parent process
         int status;
         set_pid(process);
         sig_pid = get_pid();
@@ -104,7 +94,7 @@ void Monitor::execute_command(char *command[]){
         signal(SIGTERM, sig_handler);
         waitpid(sig_pid,&status,0);
 
-	// quit loop if the child process has been terminated!
+	// quit loop after child process terminated!
     }
     
     // calculate time
@@ -112,17 +102,19 @@ void Monitor::execute_command(char *command[]){
     set_timeElapsed(end-start);
     set_userTime(t_end.tms_cutime);
     set_systermTime(t_end.tms_cstime);
-    cout << endl; 
-    //sleep(3);
-    cout << "Terminate the Parent process !" << endl;
+    
+    // output 
+    cout << endl;  
+    cout << "Terminate the Parent Process !" << endl;
+    cout << endl;
     cout<<*this;
 }
 
 namespace Project{
     ostream& operator<<(ostream& out,const Monitor& m){
-        out<<"Process "<<setw(6)<<m.get_pid()<<" : time elapsed: "<<m.get_timeElapsed()<<'\n';
-        out<<setfill(' ')<<setw(31)<<"user time   : "<<m.get_userTime()<<'\n';
-        out<<setfill(' ')<<setw(31)<<"system time : "<<m.get_systemTime()<<'\n';
+        out<<"Job Process "<<setw(6)<<m.get_pid()<<" : Time Elapsed: "<<m.get_timeElapsed()<<'\n';
+        out<<setfill(' ')<<setw(35)<<"User Time   : "<<m.get_userTime()<<'\n';
+        out<<setfill(' ')<<setw(35)<<"System Time : "<<m.get_systemTime()<<'\n';
         return out;
     }
 }
