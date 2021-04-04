@@ -13,23 +13,23 @@ deps:=$(patsudst %.o,%.d,$(odjs))
 DEPFLAG=-MMD -MF $(@:.o=.d)
 
 ifeq ($(ver),debug)
-ALL: Project
+ALL: Monitor
 %.o:%.cpp
 	$(CPP) $(STD) $(CPPFLAG) $(DEBUG) -c $< $(DEPFLAG)
 else ifeq ($(ver),release)
-ALL: Project
+ALL: Monitor
 %.o:%.cpp
-	$(CPP) $(STD) $(CPPFLAG) $(RELEASE)-c $< $(DEPFLAG)
+	$(CPP) $(STD) $(CPPFLAG) $(RELEASE) -c $< $(DEPFLAG)
 else
-ALL: Project
+ALL: Monitor
 %.o:%.cpp
 	$(CPP) $(STD) $(CPPFLAG) -c $< $(DEPFLAG)
 endif
 
-.PHONY:Project
-Project:$(objs)
+.PHONY:Monitor
+Monitor:$(objs)
 	$(CPP) $(STD) $(CPPFLAG) -o $@ $^
 	
 .PHONY:clean
 clean:	
-	rm -f Project $(objs) $(deps) *.d 
+	rm -f Monitor $(objs) $(deps) *.d 
