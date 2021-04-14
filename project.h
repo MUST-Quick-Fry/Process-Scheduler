@@ -43,7 +43,69 @@ namespace Project{
         double get_systemTime() const;
         double get_timeElapsed() const;
     };
+    /*
+        Summary:
+            Monitor console output 
+    */
     std::ostream& operator<< (std::ostream& out,const Monitor& m);
     
+    class Scheduler
+    {
+    private:
+        char* policyInfo; 
+        std::string fileInfo;
+        enum class Policy
+        {
+            FIFO,NONPREEMSJF,PREESJF,RR
+        };
+        int num; //number of jobs
+        
+        //job info from description file
+        struct Jobs
+        {
+            int pid;
+            int state;
+            std::string cmd;
+            int arrive;
+            int duration;
+        };
+        std::vector<int> arr_time;  
+        std::vector<std::string> jobCommand;
+        std::vector<int> dur_time;
+
+        void fileToken(std::string str);
+        //TBD
+        
+    public:
+        Scheduler(char * f);
+        virtual ~Scheduler(){};
+        void myPrint();
+    
+    };
 }
+#endif
+
+#ifndef UTILS_H
+#define UTILS_H
+#include <string>
+
+namespace Utils
+{
+    /*
+        Summary:
+	    Read file into std::string.
+	 
+        Param:
+        char* fileName
+        --The file to read<
+	    
+        Returns:
+        A string containing the file content
+    */
+    
+    std::string readFile(const char* fileName);
+   
+    bool isSpace(char ch);     
+} // namespace Utils
+
 #endif
