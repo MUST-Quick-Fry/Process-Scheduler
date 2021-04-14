@@ -3,9 +3,11 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <climits>
 #include <time.h>
 #include <sys/times.h>
 
+#define MAXJOBS 100000
 namespace Project{
     class Monitor
     {
@@ -68,11 +70,12 @@ namespace Project{
             std::string cmd;
             int arrive;
             int duration;
-        };
-        std::vector<int> arr_time;  
-        std::vector<std::string> jobCommand;
-        std::vector<int> dur_time;
-
+        }jobs[MAXJOBS];
+        // std::vector<int> arr_time;  
+        // std::vector<std::string> jobCommand;
+        // std::vector<int> dur_time;
+        
+        std::vector<Jobs> v_jobs;//job structure stored in vector
         void fileToken(std::string str);
         //TBD
         
@@ -82,6 +85,7 @@ namespace Project{
         void myPrint();
     
     };
+    std::ostream& operator<< (std::ostream& out,const Scheduler& sc);
 }
 #endif
 
