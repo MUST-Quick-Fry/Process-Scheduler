@@ -11,36 +11,76 @@ using namespace Project;
 
 //RR scheduler with quantum set to 2 seconds
 constexpr int QUANT=2;
-//
-void Scheduler::fileToken(std::string str)
+
+Scheduler::Scheduler(char * f)
 {
-    char* token;
+    job_num = 0;
+    std::string tmp = Utils::readFile(f);
+    normalizeCheck(tmp);
+    splitToken(tmp);
+}
+
+void Scheduler::normalizeCheck(std::string cont){
+        
+    int arg_num = 0; 
+    
+    for(int i = 0; i < cont.length(); ++i){
+        if(cont[i]=='\n'){
+        
+            if(cont[i-1]=='\n'){ 
+                if(cont[i-2]=='\t'){
+                    throw std::invalid_argument("Argument Error: Empty argument!");
+                }
+    	        continue;
+            }
+            
+            if(cont[i-1]=='\t'){
+                throw std::invalid_argument("Argument Error: Empty argument!");
+            }
+              
+            arg_num++;
+            if(arg_num > 3){
+                throw std::invalid_argument("Argument Error: Job description file has redundant arguments!");
+            }
+            if(arg_num < 3){
+                throw std::invalid_argument("Argument Error: Job description file has less arguments!");
+            }
+            arg_num = 0;
+            job_num++;
+        }
+        if(cont[i]=='\t'){arg_num++;}
+    }
+    
+}
+
+void Scheduler::splitToken(std::string str)
+{
     int cnt=0;
     char* strBuf= const_cast<char*>(str.c_str());
   
-    token = strtok (strBuf,"\t\n");
+    char* token = strtok (strBuf,"\t\n");
     while (token != NULL)
     {
-        cnt++;
-        if((cnt-1)%3==0){
+	cnt++;
+        if(cnt %3 == 1){
+            Utils::arg_check(token);
             std::string buf(token);
-            jobs[cnt/3].arrive=std::stoi(buf);
+            job.arrive=std::stoi(buf);
             //arr_time.push_back(std::stoi(buf));
         }
-        else if((cnt-2)%3==0){
+        else if( cnt%3 == 2){
             std::string buf(token);
-            jobs[cnt/3].cmd=buf;
+            job.cmd=buf;
             //jobCommand.push_back(buf);
         }
-        else if(cnt%3==0){
+        else{
+            Utils::arg_check(token);
             std::string buf(token);
-             jobs[(cnt/3)-1].duration=std::stoi(buf);
-             v_jobs.push_back(jobs[(cnt/3)-1]);
+            job.duration=std::stoi(buf);
+            job_queue.push_back(job);
             //dur_time.push_back(std::stoi(buf));
         }
-        else{
-            throw std::invalid_argument("Job description file is nonstandard!");
-        }
+        
         //printf ("%s\n",token);
         token = strtok (NULL, "\t\n");
         
@@ -48,28 +88,13 @@ void Scheduler::fileToken(std::string str)
      
 }
 
-Scheduler::Scheduler(char * f):fileInfo(Utils::readFile(f))
-{
-    num=0;
-    for(int i=0;i<fileInfo.length();i++){
-        if(fileInfo[i]=='\n'){
-            num++;
-        }
-    }
-    if(num==0){
-        throw std::invalid_argument("Job description file is nonstandard!");
-    }
-    num++;
-    fileToken(fileInfo);
-}
-
-void Scheduler::myPrint(){
+void Scheduler::Display(){
+    std::cout<<"Totally " << job_num << " jobs\n";
     std::cout<<'\n';
-    std::cout<<fileInfo;
-    std::cout<<'\n';
-    std::cout<<num<<'\n';
-    std::cout<<'\n';
-    for(int i=0;i<v_jobs.size();i++){
-        std::cout<<v_jobs[i].arrive<<' '<<v_jobs[i].cmd<<' '<<v_jobs[i].duration<<'\n';
+    std::cout<<"Gantt Chart"<<'\n';
+    std::cout<<"======================================"<<'\n';
+    
+    for(unsigned i=0;i<job_queue.size();i++){
+        std::cout<<job_queue[i].arrive<<" "<<job_queue[i].cmd<<" "<<job_queue[i].duration<<'\n';
     }
 }

@@ -54,35 +54,40 @@ namespace Project{
     class Scheduler
     {
     private:
-        char* policyInfo; 
-        std::string fileInfo;
+    
         enum class Policy
         {
             FIFO,NONPREEMSJF,PREESJF,RR
         };
-        int num; //number of jobs
+        
         
         //job info from description file
-        struct Jobs
+        struct Job
         {
             int pid;
             int state;
             std::string cmd;
             int arrive;
             int duration;
-        }jobs[MAXJOBS];
+        }job;
         // std::vector<int> arr_time;  
         // std::vector<std::string> jobCommand;
         // std::vector<int> dur_time;
         
-        std::vector<Jobs> v_jobs;//job structure stored in vector
-        void fileToken(std::string str);
+        // variable
+        int job_num;
+        char* policyInfo; 
+        std::vector<Job> job_queue;//job structure stored in vector
+        
+        // method
+        void normalizeCheck(std::string cont);
+        void splitToken(std::string str);
         //TBD
         
     public:
         Scheduler(char * f);
         virtual ~Scheduler(){};
-        void myPrint();
+        void Display();
     
     };
     std::ostream& operator<< (std::ostream& out,const Scheduler& sc);
@@ -108,8 +113,9 @@ namespace Utils
     */
     
     std::string readFile(const char* fileName);
-   
     bool isSpace(char ch);     
+    bool arg_check(char* str);
+    
 } // namespace Utils
 
 #endif

@@ -11,6 +11,6 @@ int main(int argc, char * argv[]){
     // argv[argc-1]=NULL;
     //Monitor job(argv); 
     Scheduler sc(argv[1]);    
-    sc.myPrint();
+    sc.Display();
     return 0;
 }
