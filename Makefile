@@ -1,10 +1,10 @@
-target:=scheduler utils main
+target:=scheduler utils main job
 objs:=$(target:=.o)
 ver:=test
 
 CPP	:=g++
 STD:= -std=c++11
-CPPFLAG:= 
+CPPFLAG:=-Wall 
 DEBUG :=-g -Ddebug
 RELEASE:=-O2  
 BUILD_DIR:=./build

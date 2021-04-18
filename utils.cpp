@@ -6,8 +6,8 @@
 
 namespace Utils{
     std::string readFile(const char* fileName){
-        std::stringstream ss;
-        std::ifstream file(fileName,std::ios::binary);
+    std::stringstream ss;
+    std::ifstream file(fileName,std::ios::binary);
 	ss<<file.rdbuf(); // read stream buffer
             
 	if(ss.str().empty()){

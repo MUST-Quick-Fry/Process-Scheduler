@@ -3,8 +3,8 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <climits>
 #include <time.h>
+#include <unordered_map>
 #include <sys/times.h>
 
 #define MAXJOBS 100000
@@ -31,19 +31,23 @@ namespace Project{
         double getTick(clock_t time);
 
     public:
-        Monitor(char *command[]):command(command){
+        Monitor(char *command[]):command(command)
+        {
             execute_command(command);
         };
+
         void set_pid(int pid);
         void set_userTime(clock_t time);
         void set_systermTime(clock_t time);
         void set_timeElapsed(clock_t time);
         void set_all(int pid,clock_t use_time,clock_t system_time,clock_t time_elapsed);
-        void execute_command(char *command[]);
+       
         int get_pid() const;
         double get_userTime() const;
         double get_systemTime() const;
         double get_timeElapsed() const;
+        
+        void execute_command(char *command[]);
     };
     /*
         Summary:
@@ -51,32 +55,49 @@ namespace Project{
     */
     std::ostream& operator<< (std::ostream& out,const Monitor& m);
     
+    class Job
+    {
+    private:
+        int pid;
+        int state;
+        std::string cmd;
+        int arrive;
+        int duration;
+
+    public:
+        void set_pid(int pid);
+        void set_state(int state);
+        void set_cmd(std::string cmd);
+        void set_arr_time(int arrive);
+        void set_dur_time(int duration);
+        
+        int get_pid() const;
+        int get_state() const;
+        std::string get_cmd() const;
+        int get_arr_time() const;
+        int get_dur_time() const;
+        //Job()
+        bool operator<(const Job& j) const;
+    };
+
     class Scheduler
     {
     private:
-    
+        std::string policyInfo; 
         enum class Policy
         {
             FIFO,NONPREEMSJF,PREESJF,RR
         };
-        
-        
-        //job info from description file
-        struct Job
+        const std::unordered_map<std::string,Policy> policyMap =
         {
-            int pid;
-            int state;
-            std::string cmd;
-            int arrive;
-            int duration;
-        }job;
-        // std::vector<int> arr_time;  
-        // std::vector<std::string> jobCommand;
-        // std::vector<int> dur_time;
-        
+            {"FIFO",Policy::FIFO},
+            {"SJF1",Policy::NONPREEMSJF},
+            {"SJF2",Policy::PREESJF},
+            {"RR",Policy::RR}
+        };
         // variable
         int job_num;
-        char* policyInfo; 
+        Job job; 
         std::vector<Job> job_queue;//job structure stored in vector
         
         // method
@@ -85,10 +106,10 @@ namespace Project{
         //TBD
         
     public:
-        Scheduler(char * f);
+        Scheduler(char * f,char * p);
         virtual ~Scheduler(){};
         void Display();
-    
+        int get_job_num() const;
     };
     std::ostream& operator<< (std::ostream& out,const Scheduler& sc);
 }

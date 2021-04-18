@@ -65,6 +65,10 @@
         "xtr1common": "cpp",
         "xutility": "cpp",
         "stack": "cpp",
-        "xhash": "cpp"
+        "xhash": "cpp",
+        "locale": "cpp",
+        "regex": "cpp",
+        "xlocbuf": "cpp",
+        "xlocmes": "cpp"
     }
 }
