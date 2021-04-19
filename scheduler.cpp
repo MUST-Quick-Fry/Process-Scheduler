@@ -1,6 +1,7 @@
 #include "project.h"
 #include <iostream>
 #include <algorithm>
+#include <vector>
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
@@ -20,32 +21,13 @@ int Scheduler::get_job_num() const
 
 Scheduler::Scheduler(char * f,char * p):policyInfo(p)
 {
-    job_num = 0;
-    
-    auto cho=policyMap.find(policyInfo);
-    if(cho==policyMap.end()){
-        throw std::invalid_argument("Invalid policy!");
-        exit(-1);
-    }
-    switch (cho->second)
-    {
-        case Policy::FIFO:
-            break;
-        case Policy::NONPREEMSJF:
-            break;
-        case Policy::PREESJF:         
-            break;
-        case Policy::RR:
-            std::cout<<"hh"<<"\n";
-            break;
-        default:
-            throw std::invalid_argument("Invalid policy!");
-            break;
-    }
-
+    job_num = 0;  
     std::string tmp = Utils::readFile(f);
     normalizeCheck(tmp);
     splitToken(tmp);
+    choosePolicy();
+    std::sort(job_queue.begin(),job_queue.end());
+    //schedulerDrive();
 }
 
 void Scheduler::normalizeCheck(std::string cont){
@@ -94,28 +76,81 @@ void Scheduler::splitToken(std::string str)
             Utils::arg_check(token);
             std::string buf(token);
             job.set_arr_time(std::stoi(buf));
-            //job.arrive=std::stoi(buf);
-            //arr_time.push_back(std::stoi(buf));
         }
         else if( cnt%3 == 2){
             std::string buf(token);
             job.set_cmd(buf);
-            //job.cmd=buf;
-            //jobCommand.push_back(buf);
         }
         else{
             Utils::arg_check(token);
             std::string buf(token);
             job.set_dur_time(std::stoi(buf));
-            //job.duration=std::stoi(buf);
             job_queue.push_back(job);
-            //dur_time.push_back(std::stoi(buf));
         }
-        //printf ("%s\n",token);
         token = strtok (NULL, "\t\n");
         
     }
      
+}
+
+
+void Scheduler::schedulerDrive()
+{
+    
+    // for(auto it=job_queue.begin();it!=job_queue.end();it++)
+    // {
+    //     int process;
+    //     int status;
+
+    //     process = fork();
+    //     it->set_pid(process);
+    //     it->set_state(status);
+    //     if(process < 0){
+    //     // error
+    //         status = -1;
+    //     }
+    //     else if(process == 0){ 
+    //         // child process
+    //         monitor(it->get_job());
+    //         throw std::invalid_argument("Fail to execute Child Process!\n");
+    //     }
+    //     else{
+    //     // parent process
+            
+
+    //     // quit loop after child process terminated!
+    //     }
+
+    // }
+}
+
+void Scheduler::choosePolicy()
+{
+    auto cho=policyMap.find(policyInfo);
+    if(cho==policyMap.end()){
+        throw std::invalid_argument("Invalid policy!");
+        exit(-1);
+    }
+    switch (cho->second)
+    {
+        case Policy::FIFO:
+            /* FIFO function interface*/
+            break;
+        case Policy::NONPREEMSJF:
+            /*non-preetive SJF function interface*/
+            break;
+        case Policy::PREESJF:
+             /*preetive SJF function interface*/         
+            break;
+        case Policy::RR:
+            /*RR function interface*/
+            std::cout<<"hh"<<"\n";
+            break;
+        default:
+            throw std::invalid_argument("Invalid policy!");
+            break;
+    }
+
 }
 
 void Scheduler::Display(){
@@ -124,7 +159,7 @@ void Scheduler::Display(){
     std::cout<<"Gantt Chart"<<'\n';
     std::cout<<"======================================"<<'\n';
 
-    std::sort(job_queue.begin(),job_queue.end());
+    
     for(auto it =job_queue.begin();it!=job_queue.end();it++)
     {
         std::cout<<it->get_arr_time()<<" "<<it->get_cmd()<<" "<<it->get_dur_time()<<'\n';

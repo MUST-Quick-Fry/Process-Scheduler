@@ -52,6 +52,11 @@ int Job::get_dur_time() const
     return this->duration;
 }
 
+Job Job::get_job() const
+{
+    return *this;
+}
+
 bool Job::operator<(const Job & j) const
 {
     return this->arrive < j.arrive;

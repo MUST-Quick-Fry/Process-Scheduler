@@ -1,4 +1,4 @@
-target:=scheduler utils main job
+target:=utils job monitor scheduler main
 objs:=$(target:=.o)
 ver:=test
 

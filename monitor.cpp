@@ -36,6 +36,53 @@ double Monitor::getTick(clock_t time){
     return (double)time/tps;
 }
 
+char** Monitor::cmdSplit(std::string str)
+{
+    //string to char**
+    std::vector<std::string> buf;
+    int i=0, j=0;
+    while (str[i]==' ')
+    {
+        i++;
+    }
+    j=i;
+    while (i<str.length())
+    {
+        if(str[i]!=' '|| j!='\0')
+        {
+            buf.push_back(str.substr(i,j-i));
+            i++;
+            i=j;
+        }
+        else
+        {
+            j++;
+        }
+    }
+    
+    char** pList=new char*[buf.size()];
+    for(int i=0; i!=buf.size();i++)
+    {
+        pList[i]=const_cast<char*>(buf[i].c_str());
+    }
+    
+    delete[] pList;
+    return pList;
+    
+}
+
+Monitor::Monitor(Job j):job(j)
+{
+    char** command = cmdSplit(j.get_cmd());
+    execute_command(command);
+}
+
+Monitor::Monitor(char *command[]):command(command)
+{
+    execute_command(command);
+}
+
+
 void Monitor::set_pid(int pid){
     this->process_pid=pid;
 }
@@ -65,6 +112,7 @@ double Monitor::get_systemTime() const{
 double Monitor::get_timeElapsed() const{
     return this->time_elapsed;
 }
+
 void Monitor::execute_command(char *command[]){
     int process;
     int status;
