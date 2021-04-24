@@ -2,16 +2,6 @@
 #include <iostream>
 using namespace Project;
 
-void Job::set_pid(int pid)
-{
-    this->pid=pid;
-}
-
-void Job::set_state(int state)
-{
-    this->state=state;
-}
-
 void Job::set_cmd(std::string cmd)
 {
     this->cmd=cmd;
@@ -27,14 +17,9 @@ void Job::set_dur_time(int duration)
     this->duration=duration;
 }
 
-int Job::get_pid() const 
+void Job::set_wait_time(int wait)
 {
-    return this->pid;
-}
-
-int Job::get_state() const
-{
-    return this->state;
+    this->wait_time=wait;
 }
 
 std::string Job::get_cmd() const
@@ -52,7 +37,12 @@ int Job::get_dur_time() const
     return this->duration;
 }
 
-Job Job::get_job() const
+int Job::get_wait_time() const
+{
+    return this->wait_time;
+}
+
+Job Job::get_job()
 {
     return *this;
 }

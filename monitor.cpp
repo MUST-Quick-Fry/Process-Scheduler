@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <iomanip>
+#include <sstream>
 #include <cstring>
 #include <stdexcept>
 using namespace Project;
@@ -29,6 +30,11 @@ static void sig_handler(int sig){
         kill(sig_pid, SIGTERM);
         signal(SIGTERM, sig_handler);
     }
+    else if(sig==SIGALRM){
+        cout<<"Time out"<<endl;
+        kill(sig_pid,SIGALRM);
+        //signal(SIGALRM,sig_handler);
+    }
 }
 
 double Monitor::getTick(clock_t time){
@@ -40,24 +46,12 @@ char** Monitor::cmdSplit(std::string str)
 {
     //string to char**
     std::vector<std::string> buf;
-    int i=0, j=0;
-    while (str[i]==' ')
+    std::string tmp;
+    std::stringstream ss;
+    ss<<str;
+    while(ss>>tmp)
     {
-        i++;
-    }
-    j=i;
-    while (i<str.length())
-    {
-        if(str[i]!=' '|| j!='\0')
-        {
-            buf.push_back(str.substr(i,j-i));
-            i++;
-            i=j;
-        }
-        else
-        {
-            j++;
-        }
+        buf.push_back(tmp);
     }
     
     char** pList=new char*[buf.size()];
@@ -65,14 +59,16 @@ char** Monitor::cmdSplit(std::string str)
     {
         pList[i]=const_cast<char*>(buf[i].c_str());
     }
-    
-    delete[] pList;
+    //cout<<pList<<endl;
+
+    //delete[] pList;
     return pList;
     
 }
 
 Monitor::Monitor(Job j):job(j)
 {
+    //cout<<j.get_cmd()<<endl;
     char** command = cmdSplit(j.get_cmd());
     execute_command(command);
 }
@@ -82,7 +78,9 @@ Monitor::Monitor(char *command[]):command(command)
     execute_command(command);
 }
 
-
+void Monitor::set_self_pid(int pid){
+    this->self_pid=pid;
+}
 void Monitor::set_pid(int pid){
     this->process_pid=pid;
 }
@@ -102,6 +100,9 @@ void Monitor::set_all(int pid,clock_t use_time,clock_t system_time,clock_t time_
 
 int Monitor::get_pid() const{
     return this->process_pid;
+}
+int Monitor::get_self_pid()const{
+    return this->self_pid;
 }
 double Monitor::get_userTime() const{
     return this->user_time;
@@ -129,6 +130,7 @@ void Monitor::execute_command(char *command[]){
     }
     else if(process == 0){ 
         // child process
+        cout<<"command "<<command[0]<<endl;
         execvp(command[0],command);
         throw invalid_argument("Fail to execute Child Process!\n");
     }
@@ -136,10 +138,15 @@ void Monitor::execute_command(char *command[]){
 	// parent process
         int status;
         set_pid(process);
-        sig_pid = get_pid();
+        sig_pid = process;
+        set_self_pid(getpid());
+        signal(SIGALRM,sig_handler);
         signal(SIGTSTP, sig_handler);
         signal(SIGCONT, sig_handler);
         signal(SIGTERM, sig_handler);
+        if(this->job.get_dur_time()>=0){
+            alarm(this->job.get_dur_time());
+        }
         waitpid(sig_pid,&status,0);
 
 	// quit loop after child process terminated!
@@ -150,7 +157,14 @@ void Monitor::execute_command(char *command[]){
     set_timeElapsed(end-start);
     set_userTime(t_end.tms_cutime);
     set_systermTime(t_end.tms_cstime);
-    
+    if(this->job.get_dur_time()>=0){
+        double remain_time=this->job.get_dur_time()-this->get_timeElapsed();
+        if(remain_time>0)
+            sleep(remain_time);
+    }
+    else{
+        this->job.set_dur_time(this->get_timeElapsed());
+    }
     // output 
     cout << endl;  
     cout << "Terminate the Parent Process !" << endl;

@@ -6,31 +6,28 @@
 #include <time.h>
 #include <unordered_map>
 #include <sys/times.h>
+#include <algorithm>
 
 #define MAXJOBS 100000
 namespace Project{
     class Job
     {
     private:
-        int pid;
-        int state;
         std::string cmd;
         int arrive;
         int duration;
+        int wait_time=0;
 
     public:
-        void set_pid(int pid);
-        void set_state(int state);
+        void set_wait_time(int wait);
         void set_cmd(std::string cmd);
         void set_arr_time(int arrive);
         void set_dur_time(int duration);
-        
-        int get_pid() const;
-        int get_state() const;
         std::string get_cmd() const;
+        int get_wait_time() const;
         int get_arr_time() const;
         int get_dur_time() const;
-        Job get_job() const;
+        Job get_job();
         bool operator<(const Job& j) const;
     };
 
@@ -39,6 +36,7 @@ namespace Project{
     private:
         char **command;
         int process_pid=0;
+        int self_pid;
         clock_t start,end;
         // /*
         // struct tms{
@@ -52,7 +50,7 @@ namespace Project{
         double user_time=0;
         double system_time=0;
         double time_elapsed=0;
-        Job job;
+        
         
         //get elapsed time of clock of system 
         double getTick(clock_t time);
@@ -62,13 +60,16 @@ namespace Project{
     public:
         Monitor(char *command[]);
         Monitor(Job j);
-
+        Monitor();
+        Job job;
         void set_pid(int pid);
+        void set_self_pid(int pid);
         void set_userTime(clock_t time);
         void set_systermTime(clock_t time);
         void set_timeElapsed(clock_t time);
         void set_all(int pid,clock_t use_time,clock_t system_time,clock_t time_elapsed);
-       
+        
+        int get_self_pid() const;
         int get_pid() const;
         double get_userTime() const;
         double get_systemTime() const;
@@ -99,16 +100,16 @@ namespace Project{
         };
         // variable
         int job_num;
-        Job job;
+        int total_time;
         //Monitor monitor; 
-        std::vector<Job> job_queue;//job structure stored in vector
+        
         
         // method
         void normalizeCheck(std::string cont);
         void splitToken(std::string str);
         
         void choosePolicy();
-        void schedulerDrive();
+        //void schedulerDrive();
         
         //TBD
         void driveFIFO();
@@ -118,10 +119,16 @@ namespace Project{
         
     public:
         Scheduler(char * f,char * p);
-        virtual ~Scheduler(){};
+        ~Scheduler(){};
         void Display();
+        void set_total_time(int now);
+
+        int get_total_time() const;
         int get_job_num() const;
+        std::vector<Monitor> monitor_vector;
+        std::vector<Job> job_queue;//job structure stored in vector
     };
+    
     std::ostream& operator<< (std::ostream& out,const Scheduler& sc);
 }
 #endif
