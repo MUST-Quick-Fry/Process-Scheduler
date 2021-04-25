@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <algorithm>
 #include <iomanip>
+#include <queue>
 
 using namespace Project;
 
@@ -135,6 +136,7 @@ void Scheduler::choosePolicy()
         break;
     case Policy::NONPREEMSJF:
         /*non-preetive SJF function interface*/
+        driveSJF1();
         break;
     case Policy::PREESJF:
         /*preetive SJF function interface*/
@@ -160,17 +162,17 @@ void Scheduler::driveFIFO()
         Monitor *monitor;
         if (process == 0)
         {
-            monitor = new Monitor(job_queue[i]);
-            if(job_queue[i].get_dur_time()==-1){
-                job_queue[i].set_dur_time(monitor->job.get_dur_time());
-            }
             if (i == 0)
             {
                 sleep(job_queue[i].get_arr_time());
                 now += job_queue[i].get_arr_time() + job_queue[i].get_dur_time();
 
             }
-            else
+            monitor = new Monitor(job_queue[i]);
+            if(job_queue[i].get_dur_time()==-1){
+                job_queue[i].set_dur_time(monitor->job.get_dur_time());
+            }
+            if(i!=0)
             {
                 if (now < job_queue[i].get_arr_time())
                 {
@@ -200,6 +202,72 @@ void Scheduler::driveFIFO()
         std::cout<<*this;
     }
     waitpid(process,0,0);
+}
+
+void Scheduler::driveSJF1()
+{
+    std::vector<Job> tmp;
+    std::priority_queue<Job,std::vector<Job>,std::greater<Job>> pq;
+    int now=0;
+    int cnt=0;
+    pq.emplace(job_queue[0]);
+    int process=fork();
+    while(!pq.empty()){
+        Monitor *monitor;
+        if (process == 0)
+        {
+            auto it=pq.top();
+            pq.pop();
+            if (cnt == 0)
+            {
+                sleep(it.get_arr_time());
+                now += it.get_arr_time() + it.get_dur_time();
+            }
+            monitor = new Monitor(it);
+            if(it.get_dur_time()==-1){
+                it.set_dur_time(monitor->job.get_dur_time());
+            }
+            if(cnt!=0)
+            {
+                if (now < it.get_arr_time())
+                {
+                    sleep(it.get_arr_time() - now);
+                    now = it.get_arr_time() + it.get_dur_time();
+                }
+                else
+                {
+                    it.set_wait_time(now-it.get_arr_time());
+                    it.set_arr_time(now); 
+                    now += it.get_dur_time();
+                }
+            }
+            tmp.emplace_back(it);
+            for(int i=cnt+1;i<job_queue.size();i++){
+                if(job_queue[i].get_arr_time()<=now){
+                    pq.emplace(job_queue[i]);
+                    cnt++;
+                }
+                else 
+                    break;
+            }
+            if(pq.empty() && cnt<job_queue.size()-1){
+                pq.emplace(job_queue[++cnt]);
+            }
+        }
+        else
+        {
+            waitpid(monitor->get_self_pid(), 0, 0);
+        }
+    }
+    if(!process){
+        std::cout<<"size "<<pq.size()<<'\n';
+        std::cout<<"cnt "<<cnt<<'\n';
+        set_total_time(now);
+        this->job_queue=tmp;
+        std::cout<<*this;
+    }
+    kill(process,SIGTERM);
+    kill(getpid(),SIGTERM);
 }
 
 namespace Project
