@@ -161,7 +161,7 @@ void Scheduler::driveFIFO()
         if (process == 0)
         {
             monitor = new Monitor(job_queue[i]);
-            if(job_queue[i].get_dur_time()==-1){
+            if(job_queue[i].get_dur_time()==-1){//duration time =-1 run indefinitely until it terminates
                 job_queue[i].set_dur_time(monitor->job.get_dur_time());
             }
             if (i == 0)
@@ -180,7 +180,7 @@ void Scheduler::driveFIFO()
                 else
                 {
                     job_queue[i].set_wait_time(now-job_queue[i].get_arr_time());
-                    job_queue[i].set_arr_time(now); 
+                    job_queue[i].set_arr_time(now);  //arr_time change to exactly time mark for every job 
                     now += job_queue[i].get_dur_time();
                 }
             }
@@ -229,11 +229,6 @@ namespace Project
         for (int i = 0; i < sc.get_job_num(); i++)
         {
             out << "Job " << i + 1 << std::setfill(' ') << std::setw(7) << '|';
-            // for (int j = 0,k=1; 
-            // j < sc.job_queue[k].get_arr_time()-sc.job_queue[k-1].get_dur_time()-sc.job_queue[k].get_wait_time(); j++,k++)
-            // {
-            //     out << "  ";
-            // }
             for(int j=0;j<sc.job_queue[i].get_arr_time()-sc.job_queue[i].get_wait_time()
             ;j++){
                 out<<"  ";

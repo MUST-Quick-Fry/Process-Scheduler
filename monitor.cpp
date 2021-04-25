@@ -42,18 +42,34 @@ double Monitor::getTick(clock_t time){
     return (double)time/tps;
 }
 
+//string to char**
 char** Monitor::cmdSplit(std::string str)
 {
-    //string to char**
+    //string to char*
     std::vector<std::string> buf;
     std::string tmp;
     std::stringstream ss;
     ss<<str;
-    while(ss>>tmp)
+    if(ss>>tmp)
     {
         buf.push_back(tmp);
+        if(tmp=="echo")
+        {
+             while(ss>>tmp)
+            {
+                buf.push_back(tmp+"");
+            }
+        }
+        else
+        {
+            while(ss>>tmp)
+            {
+                buf.push_back(tmp);
+            }
+        }
     }
     
+    //char* to char**
     char** pList=new char*[buf.size()];
     for(int i=0; i!=buf.size();i++)
     {
@@ -160,8 +176,10 @@ void Monitor::execute_command(char *command[]){
     if(this->job.get_dur_time()>=0){
         double remain_time=this->job.get_dur_time()-this->get_timeElapsed();
         if(remain_time>0)
+        {
             sleep(remain_time);
-    }
+        }         
+    }       
     else{
         this->job.set_dur_time(this->get_timeElapsed());
     }
