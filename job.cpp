@@ -51,3 +51,8 @@ bool Job::operator<(const Job & j) const
 {
     return this->arrive < j.arrive;
 }
+
+bool Job::operator>(const Job & j) const
+{
+    return this->duration>j.duration;
+}

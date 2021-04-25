@@ -29,6 +29,7 @@ namespace Project{
         int get_dur_time() const;
         Job get_job();
         bool operator<(const Job& j) const;
+        bool operator>(const Job& j) const;
     };
 
     class Monitor
