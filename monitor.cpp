@@ -50,25 +50,12 @@ char** Monitor::cmdSplit(std::string str)
     std::string tmp;
     std::stringstream ss;
     ss<<str;
-    if(ss>>tmp)
-    {
-        buf.push_back(tmp);
-        if(tmp=="echo")
-        {
-             while(ss>>tmp)
-            {
-                buf.push_back(tmp+"");
-            }
-        }
-        else
-        {
-            while(ss>>tmp)
-            {
-                buf.push_back(tmp);
-            }
-        }
-    }
     
+    while(ss>>tmp)
+    {
+        buf.push_back(tmp + "");
+    }
+     
     //char* to char**
     char** pList=new char*[buf.size()];
     for(int i=0; i!=buf.size();i++)
@@ -89,10 +76,12 @@ Monitor::Monitor(Job j):job(j)
     execute_command(command);
 }
 
+/*
 Monitor::Monitor(char *command[]):command(command)
 {
     execute_command(command);
 }
+*/
 
 void Monitor::set_self_pid(int pid){
     this->self_pid=pid;
@@ -134,6 +123,7 @@ void Monitor::execute_command(char *command[]){
     int process;
     int status;
     
+    cout << "=================================================" << endl;
     cout << "Job Process Start !" << endl;
     cout << endl;
 
@@ -195,6 +185,8 @@ namespace Project{
         out<<"Job Process "<<setw(6)<<m.get_pid()<<" : Time Elapsed: "<<m.get_timeElapsed()<<'\n';
         out<<setfill(' ')<<setw(35)<<"User Time   : "<<m.get_userTime()<<'\n';
         out<<setfill(' ')<<setw(35)<<"System Time : "<<m.get_systemTime()<<'\n';
+        out << "=================================================" << '\n';
+        out << '\n';
         return out;
     }
 }

@@ -121,7 +121,7 @@ void Scheduler::splitToken(std::string str)
 void Scheduler::choosePolicy()
 {
     sort(this->job_queue.begin(), this->job_queue.end());
-    std::cout<<this->job_queue.size()<<'\n';
+    std::cout<< "Totally "<<this->job_queue.size()<<" jobs are ready!" <<'\n';
     auto cho = policyMap.find(policyInfo);
     if (cho == policyMap.end())
     {
@@ -157,12 +157,11 @@ void Scheduler::driveFIFO()
 {
     int now=0;
     int process = fork();
-    for (int i = 0; i < get_job_num(); i++)
-    {
-        Monitor *monitor;
-        if (process == 0)
+    if (process == 0){
+        for (int i = 0; i < get_job_num(); i++)
         {
-            monitor = new Monitor(job_queue[i]);
+            Monitor *monitor;
+          
             if(job_queue[i].get_dur_time()==-1){//duration time =-1 run indefinitely until it terminates
                 job_queue[i].set_dur_time(monitor->job.get_dur_time());
             }
@@ -192,20 +191,17 @@ void Scheduler::driveFIFO()
             }
             //monitor_vector.emplace_back(monitor);
             //std::cout<<monitor<<std::endl;
+             
         }
-        else
-        {
-            waitpid(monitor->get_self_pid(), 0, 0);
-        }
-    }
-    if (!process)
-    {
-        //waitpid(process,0,0);
+        
         set_total_time(now);
         std::cout<<"now "<<now<<std::endl;
         std::cout<<*this;
     }
-    waitpid(process,0,0);
+    else{
+        waitpid(process, 0, 0);
+    }
+    
 }
 
 void Scheduler::driveSJF1()
@@ -216,10 +212,11 @@ void Scheduler::driveSJF1()
     int cnt=0;
     pq.emplace(job_queue[0]);
     int process=fork();
-    while(!pq.empty()){
-        Monitor *monitor;
-        if (process == 0)
-        {
+    
+    if (process == 0){
+        while(!pq.empty()){
+            Monitor *monitor;
+        
             auto it=pq.top();
             pq.pop();
             if (cnt == 0)
@@ -257,21 +254,22 @@ void Scheduler::driveSJF1()
             if(pq.empty() && cnt<job_queue.size()-1){
                 pq.emplace(job_queue[++cnt]);
             }
+          
         }
-        else
-        {
-            waitpid(monitor->get_self_pid(), 0, 0);
-        }
-    }
-    if(!process){
+        
         std::cout<<"size "<<pq.size()<<'\n';
         std::cout<<"cnt "<<cnt<<'\n';
         set_total_time(now);
         this->job_queue=tmp;
         std::cout<<*this;
+             
     }
-    kill(process,SIGTERM);
-    kill(getpid(),SIGTERM);
+    else{ 
+        waitpid(process, 0, 0);
+    }
+ 
+    //kill(process,SIGTERM);
+    //kill(getpid(),SIGTERM);
 }
 
 namespace Project
@@ -280,8 +278,9 @@ namespace Project
     {
         out << "Totally " << sc.get_job_num() << " jobs\n";
         out << '\n';
+        out << "-----------------------------------------------------------------------------------------------" << '\n';
         out << "Gantt Chart" << '\n';
-        out << "=============" << '\n';
+        out << "-----------------------------------------------------------------------------------------------" << '\n';
         out << "Time" << std::setfill(' ') << std::setw(8) << '|';
         for (int i = 0; i <= sc.get_total_time() / 10; i++)
         {
