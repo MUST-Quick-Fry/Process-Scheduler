@@ -1,4 +1,4 @@
-target:=utils job monitor scheduler main
+target:=monitor project
 objs:=$(target:=.o)
 ver:=test
 
@@ -14,21 +14,21 @@ deps:=$(patsudst %.o,%.d,$(odjs))
 DEPFLAG=-MMD -MF $(@:.o=.d)
 
 ifeq ($(ver),debug)
-ALL: Scheduler
+ALL: Monitor
 %.o:%.cpp
 	$(CPP) $(STD) $(CPPFLAG) $(DEBUG) -c $< $(DEPFLAG)
 else ifeq ($(ver),release)
-ALL: Scheduler
+ALL: Monitor
 %.o:%.cpp
 	$(CPP) $(STD) $(CPPFLAG) $(RELEASE) -c $< $(DEPFLAG)
 else
-ALL: Scheduler
+ALL: Monitor
 %.o:%.cpp
 	$(CPP) $(STD) $(CPPFLAG) -c $< $(DEPFLAG)
 endif
 
-.PHONY:Scheduler
-Scheduler:$(objs)
+.PHONY:Monitor
+Monitor:$(objs)
 	@if [ ! -d $(OBJ_DIR) ];then mkdir -p $(OBJ_DIR);fi 
 	@if [ ! -d $(BUILD_DIR) ];then mkdir -p $(BUILD_DIR);fi 
 	$(CPP) $(STD) $(CPPFLAG) -o $@ $^
@@ -37,6 +37,6 @@ Scheduler:$(objs)
 
 .PHONY:clean
 clean:	
-	rm -f Scheduler 
+	rm -f Monitor 
 	find . -name "*.o" | xargs rm -f
 	find . -name "*.d" | xargs rm -f
