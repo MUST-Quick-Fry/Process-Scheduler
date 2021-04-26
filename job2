@@ -1,0 +1,9 @@
+1	echo gdagafsgadf	2
+0	 ./sample/while1	6
+2	./sample/timer	5
+1	./sample/timer 4.5	5
+4	./sample/timer	3
+3	./sample/timer	 2
+2	  echo ff hh jj hh o	2
+3	ls -l -a ./	2
+6	./sample/timer	-1
