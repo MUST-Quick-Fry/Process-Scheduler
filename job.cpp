@@ -49,10 +49,10 @@ Job Job::get_job()
 
 bool Job::operator<(const Job & j) const
 {
-    return this->arrive < j.arrive;
+    return this->arrive > j.arrive;
 }
 
 bool Job::operator>(const Job & j) const
 {
-    return this->duration>j.duration;
+    return this->duration > j.duration;
 }

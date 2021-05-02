@@ -4,9 +4,14 @@
 #include <vector>
 #include <string>
 #include <time.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
 #include <unordered_map>
 #include <sys/times.h>
 #include <algorithm>
+#include <queue>
+#include <unordered_map>
 
 #define MAXJOBS 100000
 namespace Project{
@@ -17,8 +22,11 @@ namespace Project{
         int arrive;
         int duration;
         int wait_time=0;
-
+        
     public:
+        int ID;
+        int service_time_left;
+        
         void set_wait_time(int wait);
         void set_cmd(std::string cmd);
         void set_arr_time(int arrive);
@@ -30,7 +38,9 @@ namespace Project{
         Job get_job();
         bool operator<(const Job& j) const;
         bool operator>(const Job& j) const;
+        char status[30];
     };
+
 
     class Monitor
     {
@@ -59,9 +69,7 @@ namespace Project{
         char** cmdSplit(std::string str);
 
     public:
-        Monitor(char *command[]);
         Monitor(Job j);
-        Monitor();
         Job job;
         void set_pid(int pid);
         void set_self_pid(int pid);
@@ -76,7 +84,9 @@ namespace Project{
         double get_systemTime() const;
         double get_timeElapsed() const;
         
-        void execute_command(char *command[]);
+        void print_time();
+        
+        //void execute_command(char *command[]);
     };
     /*
         Summary:
@@ -103,12 +113,10 @@ namespace Project{
         int job_num;
         int total_time;
         //Monitor monitor; 
-        
-        
+              
         // method
         void normalizeCheck(std::string cont);
-        void splitToken(std::string str);
-        
+        void splitToken(std::string str);     
         void choosePolicy();
         //void schedulerDrive();
         
@@ -121,14 +129,99 @@ namespace Project{
     public:
         Scheduler(char * f,char * p);
         ~Scheduler(){};
-        void Display();
+        void Display(std::queue<Job> q);
         void set_total_time(int now);
-
         int get_total_time() const;
         int get_job_num() const;
         std::vector<Monitor> monitor_vector;
-        std::vector<Job> job_queue;//job structure stored in vector
+        
     };
+    
+    
+    //RR scheduler with quantum set to 2 seconds
+    static int QUANT = 2;
+    static Job this_job;
+    static bool stop_flag = false;
+    static bool allow_preem = true;
+    
+    static std::vector<Job> job_queue;//job structure stored in vector
+    static std::queue<Job> scheduler;
+    static std::queue<Job> wait_queue;
+    static std::unordered_map<int, int> m; //monitor and child
+    static std::unordered_map<int ,int> monitor_map; // parent and monitor process
+  
+    
+    static void sig_handler(int sig){
+        std::cout << std::endl;
+        if(sig==SIGTSTP){ 
+            std::cout << "The Job is suspended ..." << std::endl;
+            std::cout << m[getpid()]<< std::endl;
+            kill(m[getpid()], SIGTSTP);         
+            signal(SIGTSTP, sig_handler);
+        }
+        else if(sig==SIGCONT){ 
+            std::cout << "The Job resumes ... " << std::endl;
+            std::cout <<m[getpid()] << std::endl;
+            kill(m[getpid()], SIGCONT);
+            signal(SIGCONT, sig_handler);
+        }
+        else if(sig==SIGTERM){
+            std::cout << "The Job terminate ... " << std::endl;
+            std::cout <<m[getpid()] << " " << getpid() <<std::endl;
+            kill(m[getpid()], SIGKILL);
+            //signal(SIGTERM, sig_handler);
+        }
+        
+    }
+    
+    // handle arrival time
+    static void job_stop(int sig){
+        
+        if(scheduler.empty() && wait_queue.empty()){stop_flag = true;}
+        
+        if(this_job.service_time_left <= QUANT){
+            kill(monitor_map[this_job.ID], SIGTERM);  
+        }
+        else{
+            kill(monitor_map[this_job.ID], SIGTSTP);
+        }
+    
+        if(!wait_queue.empty()){
+            auto tmp = wait_queue.front();
+            wait_queue.pop();
+
+            kill(monitor_map[tmp.ID], SIGCONT);   
+            this_job = tmp;
+
+            signal(SIGALRM, job_stop);
+            alarm(tmp.get_dur_time());
+        }
+        else{allow_preem = true; }
+
+    }
+    
+    static void job_FIFO(int sig){
+        
+        std::cout << wait_queue.size() <<std::endl;
+        
+        if(scheduler.empty() && wait_queue.empty()){stop_flag = true;}
+            
+        kill(monitor_map[this_job.ID], SIGTERM);  
+        
+        if(!wait_queue.empty()){
+            auto tmp = wait_queue.front();
+            wait_queue.pop();
+
+            kill(monitor_map[tmp.ID], SIGCONT);   
+            this_job = tmp;
+
+            signal(SIGALRM, job_FIFO);
+            alarm(tmp.get_dur_time());
+        }
+        else{allow_preem = true; }
+
+    }
+    
     
     std::ostream& operator<< (std::ostream& out,const Scheduler& sc);
 }

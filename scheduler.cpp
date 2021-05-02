@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <vector>
 #include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/types.h>
@@ -12,10 +14,6 @@
 #include <queue>
 
 using namespace Project;
-
-//RR scheduler with quantum set to 2 seconds
-constexpr int QUANT = 2;
-
 
 void Scheduler::set_total_time(int now)
 {
@@ -34,7 +32,6 @@ int Scheduler::get_job_num() const
 
 Scheduler::Scheduler(char *f, char *p) : policyInfo(p)
 {
-    
     std::string tmp = Utils::readFile(f);
     normalizeCheck(tmp);
     splitToken(tmp);
@@ -98,6 +95,7 @@ void Scheduler::splitToken(std::string str)
         cnt++;
         if (cnt % 3 == 1)
         {
+            job.ID = cnt/3;
             Utils::arg_check(token);
             std::string buf(token);
             job.set_arr_time(std::stoi(buf));
@@ -120,8 +118,8 @@ void Scheduler::splitToken(std::string str)
 
 void Scheduler::choosePolicy()
 {
-    sort(this->job_queue.begin(), this->job_queue.end());
-    std::cout<< "Totally "<<this->job_queue.size()<<" jobs are ready!" <<'\n';
+    sort(job_queue.begin(), job_queue.end());
+    std::cout<< "Totally "<<job_queue.size()<<" jobs are ready!" <<'\n';
     auto cho = policyMap.find(policyInfo);
     if (cho == policyMap.end())
     {
@@ -140,11 +138,11 @@ void Scheduler::choosePolicy()
         break;
     case Policy::PREESJF:
         /*preetive SJF function interface*/
+        driveSJF2();
         break;
     case Policy::RR:
         /*RR function interface*/
-        std::cout << "hh"
-                  << "\n";
+        driveRR();
         break;
     default:
         throw std::invalid_argument("Invalid policy!");
@@ -155,191 +153,348 @@ void Scheduler::choosePolicy()
 
 void Scheduler::driveFIFO()
 {
-    int now=0;
-    int process = fork();
-    if (process == 0){
-        for (int i = 0; i < get_job_num(); i++)
-        {
-            Monitor *monitor;
-          
-            if(job_queue[i].get_dur_time()==-1){//duration time =-1 run indefinitely until it terminates
-                job_queue[i].set_dur_time(monitor->job.get_dur_time());
+    std::priority_queue<Job,std::vector<Job>,std::less<Job> > pq_arr;
+    int len = get_job_num();
+    int time = 0;
+     
+    for(int i = 0; i < len; ++i){
+        pq_arr.emplace(job_queue[i]);  
+    }
+    
+    time = pq_arr.top().get_arr_time();
+    
+    while(!pq_arr.empty()){
+        auto it = pq_arr.top();
+        time += it.get_dur_time();
+        scheduler.emplace(it);
+        pq_arr.pop();
+    }
+    
+    // display
+    set_total_time(time);
+    Display(scheduler);
+    std::cout << std::endl;
+    
+    // execute
+    int realtime = 0;
+    int pid = 1;
+   
+    while(!stop_flag){
+    
+        //std::cout << "now time: " << realtime << std::endl;    
+        
+        while(!scheduler.empty() && realtime == scheduler.front().get_arr_time()){
+            auto it = scheduler.front();
+            scheduler.pop();
+            
+            if(monitor_map[it.ID]==0){
+                pid = fork();
+                if(pid == 0){
+                    Monitor* monitor = new Monitor(it);                  
+                }
+                else{
+                    monitor_map[it.ID]=pid;
+                }
             }
-            if (i == 0)
-            {
-                sleep(job_queue[i].get_arr_time());
-                now += job_queue[i].get_arr_time() + job_queue[i].get_dur_time();
+            
+            
+            if(pid !=0){     
+                                           
+                     if(allow_preem){                 
+                         allow_preem = false;                                  
+                         this_job = it;
+                         
+                         
+                         signal(SIGALRM, job_FIFO);
+                         alarm(it.get_dur_time());
+                               
+                         sleep(0.1);                
+                         kill(monitor_map[it.ID], SIGCONT);    
 
-            }
-            monitor = new Monitor(job_queue[i]);
-            if(job_queue[i].get_dur_time()==-1){
-                job_queue[i].set_dur_time(monitor->job.get_dur_time());
-            }
-            if(i!=0)
-            {
-                if (now < job_queue[i].get_arr_time())
-                {
-                    sleep(job_queue[i].get_arr_time() - now);
-                    now = job_queue[i].get_arr_time() + job_queue[i].get_dur_time();
-                }
-                else
-                {
-                    job_queue[i].set_wait_time(now-job_queue[i].get_arr_time());
-                    job_queue[i].set_arr_time(now);  //arr_time change to exactly time mark for every job 
-                    now += job_queue[i].get_dur_time();
-                }
-            }
-            //monitor_vector.emplace_back(monitor);
-            //std::cout<<monitor<<std::endl;
-             
+                     }
+                     else{
+                         wait_queue.emplace(it);
+                     }
+                 
+             }
         }
         
-        set_total_time(now);
-        std::cout<<"now "<<now<<std::endl;
-        std::cout<<*this;
+        
+        if(pid!=0){         
+             sleep(1);          
+             realtime++;
+             
+        }
+                        
     }
-    else{
-        waitpid(process, 0, 0);
+    
+    if(pid !=0){ 
+        while (1) {
+            int result = wait(NULL);
+            if (result == -1) {
+                if (errno == EINTR) { continue;}
+
+                break;
+            }
+        }
+
     }
     
 }
 
 void Scheduler::driveSJF1()
 {
-    std::vector<Job> tmp;
-    std::priority_queue<Job,std::vector<Job>,std::greater<Job>> pq;
-    int now=0;
-    int cnt=0;
-    pq.emplace(job_queue[0]);
-    int process=fork();
     
-    if (process == 0){
-        while(!pq.empty()){
-            Monitor *monitor;
+}
+
+void Scheduler::driveRR(){
+    
+    std::priority_queue<Job,std::vector<Job>,std::less<Job> > pq_arr;
+    std::queue<Job> wait_q; 
+    int len = get_job_num();
+     
+    for(int i = 0; i < len; ++i){
+        pq_arr.emplace(job_queue[i]);  
+    }
+    
+    // create a schedule
+    int time = 0;
+    bool stop = false;
+   
+    while(!stop){
+        if(pq_arr.empty() || time < pq_arr.top().get_arr_time()){
+            if(wait_q.empty()){time++;}
+            else{
+                Job tmp2 = wait_q.front();
+                wait_q.pop();
+                tmp2.set_arr_time(time);
+                if(tmp2.get_dur_time() > QUANT){
+                    tmp2.service_time_left = tmp2.get_dur_time();
+                    scheduler.emplace(tmp2);
+                    tmp2.set_dur_time(tmp2.get_dur_time()-QUANT);
+                    wait_q.emplace(tmp2);
+                    time += QUANT;
+                }
+                else{
+                    tmp2.service_time_left = tmp2.get_dur_time();
+                    scheduler.emplace(tmp2);
+                    time += tmp2.get_dur_time();
+                }
+            }
+        }
+        else{
+            Job tmp = pq_arr.top();
+            pq_arr.pop(); 
+            
+            if(tmp.get_dur_time() > QUANT){
+                 tmp.service_time_left = tmp.get_dur_time();
+                 scheduler.emplace(tmp);
+                 scheduler.back().set_dur_time(QUANT);
+                 tmp.set_dur_time(tmp.get_dur_time()-QUANT);
+                 wait_q.emplace(tmp);
+                 time += QUANT;
+             }
+             else{
+                 tmp.service_time_left = tmp.get_dur_time();
+                 scheduler.emplace(tmp);
+                 time += tmp.get_dur_time();
+             }
         
-            auto it=pq.top();
-            pq.pop();
-            if (cnt == 0)
-            {
-                sleep(it.get_arr_time());
-                now += it.get_arr_time() + it.get_dur_time();
-            }
-            monitor = new Monitor(it);
-            if(it.get_dur_time()==-1){
-                it.set_dur_time(monitor->job.get_dur_time());
-            }
-            if(cnt!=0)
-            {
-                if (now < it.get_arr_time())
-                {
-                    sleep(it.get_arr_time() - now);
-                    now = it.get_arr_time() + it.get_dur_time();
-                }
-                else
-                {
-                    it.set_wait_time(now-it.get_arr_time());
-                    it.set_arr_time(now); 
-                    now += it.get_dur_time();
-                }
-            }
-            tmp.emplace_back(it);
-            for(int i=cnt+1;i<job_queue.size();i++){
-                if(job_queue[i].get_arr_time()<=now){
-                    pq.emplace(job_queue[i]);
-                    cnt++;
-                }
-                else 
-                    break;
-            }
-            if(pq.empty() && cnt<job_queue.size()-1){
-                pq.emplace(job_queue[++cnt]);
-            }
-          
         }
         
-        std::cout<<"size "<<pq.size()<<'\n';
-        std::cout<<"cnt "<<cnt<<'\n';
-        set_total_time(now);
-        this->job_queue=tmp;
-        std::cout<<*this;
+        if(wait_q.empty() && pq_arr.empty()){stop = true;}
+    }
+    
+    // draw scheduler
+    set_total_time(time);
+    Display(scheduler);
+    std::cout << std::endl;
+    
+    /*
+    
+    // display
+    while(!scheduler.empty()){
+        std::cout << scheduler.front().ID << " " << scheduler.front().get_arr_time() << " " << scheduler.front().service_time_left << std::endl;
+        scheduler.pop();
+    }
+    
+    */
+    
+    // execute
+    int realtime = 0;
+    int pid = 1;
+        
+    while(!stop_flag)
+    {
+    
+         std::cout << "now time: " << realtime << std::endl;    
+         
+         while(!scheduler.empty() && realtime == scheduler.front().get_arr_time()){
+                auto it = scheduler.front();                      
+                scheduler.pop();
              
-    }
-    else{ 
-        waitpid(process, 0, 0);
-    }
+                if(monitor_map[it.ID]==0){
+                     pid = fork();
+                     if(pid == 0){
+                         Monitor* monitor = new Monitor(it);                  
+                     }
+                     else{
+                         monitor_map[it.ID]=pid;
+                     }
+                 }
+                  
+                 if(pid !=0){                                   
+                     if(allow_preem){                 
+                         allow_preem = false;                                  
+                         this_job = it;
+                         
+                         signal(SIGALRM, job_stop);
+                         alarm(it.get_dur_time());
+                            
+                         sleep(0.1);                
+                         kill(monitor_map[it.ID], SIGCONT);    
+                            
+                         //std::cout << "allo_preem " << allow_preem<<std::endl;
+                     }
+                     else{
+                         wait_queue.emplace(it);
+                     }
+                 
+                 }
  
-    //kill(process,SIGTERM);
-    //kill(getpid(),SIGTERM);
+         }
+         
+         if(pid!=0){      
+             sleep(1);            
+             realtime++;
+
+         }
+                        
+    }
+    
+    if(pid !=0){ 
+        while (1) {
+            int result = wait(NULL);
+            if (result == -1) {
+                if (errno == EINTR) { continue;}
+
+                break;
+            }
+        }
+
+    }
+        
+}
+
+void Scheduler::driveSJF2(){
+    
 }
 
 namespace Project
 {
     std::ostream &operator<<(std::ostream &out, const Scheduler &sc)
     {
-        out << "Totally " << sc.get_job_num() << " jobs\n";
-        out << '\n';
-        out << "-----------------------------------------------------------------------------------------------" << '\n';
-        out << "Gantt Chart" << '\n';
-        out << "-----------------------------------------------------------------------------------------------" << '\n';
-        out << "Time" << std::setfill(' ') << std::setw(8) << '|';
-        for (int i = 0; i <= sc.get_total_time() / 10; i++)
-        {
-            out << i;
-            out << std::setfill(' ') << std::setw(20);
-        }
-        out << '\n';
-        out << std::setfill(' ') << std::setw(12) << '|';
-        for (int i = 0; i <= sc.get_total_time() / 10; i++)
-        {
-            for (int j = 0; j <= 9; j++)
-            {
-                out << j << ' ';
-            }
-        }
-        out << '\n';
-        for (int i = 0; i < sc.get_job_num(); i++)
-        {
-            out << "Job " << i + 1 << std::setfill(' ') << std::setw(7) << '|';
-            for(int j=0;j<sc.job_queue[i].get_arr_time()-sc.job_queue[i].get_wait_time()
-            ;j++){
-                out<<"  ";
-            }
-            for(int j=0;j<sc.job_queue[i].get_wait_time();j++)
-            {
-                out<<". ";
-            }
-            for (int j = 0; j < sc.job_queue[i].get_dur_time(); j++)
-            {
-                out << "# ";
-            }
-            out << '\n';
-        }
-        out << "Mixed" << std::setfill(' ') << std::setw(7) << '|';
-        for(int i=0;i<sc.job_queue[0].get_arr_time();i++)
-        {
-            out<<"  ";
-        }
+        out << "End" <<'\n';
+        //out << "Totally " << sc.get_job_num() << " jobs\n";
+        //out << '\n';
+        //out << "-----------------------------------------------------------------------------------------------" << '\n';
+        //out << "Gantt Chart" << '\n';
+        //out << "-----------------------------------------------------------------------------------------------" << '\n';
+        //out << "Time" << std::setfill(' ') << std::setw(8) << '|';
+        //for (int i = 0; i <= sc.get_total_time() / 10; i++)
+        //{
+            //out << i;
+            //out << std::setfill(' ') << std::setw(20);
+        //}
+        //out << '\n';
+        //out << std::setfill(' ') << std::setw(12) << '|';
+        //for (int i = 0; i <= sc.get_total_time() / 10; i++)
+        //{
+            //for (int j = 0; j <= 9; j++)
+            //{
+                //out << j << ' ';
+            //}
+        //}
+        //out << '\n';
+        //for (int i = 0; i < sc.get_job_num(); i++)
+        //{
+            //out << "Job " << i + 1 << std::setfill(' ') << std::setw(7) << '|';
+            //for(int j=0;j<sc.job_queue[i].get_arr_time()-sc.job_queue[i].get_wait_time()
+            //;j++){
+                //out<<"  ";
+            //}
+            //for(int j=0;j<sc.job_queue[i].get_wait_time();j++)
+            //{
+                //out<<". ";
+            //}
+            //for (int j = 0; j < sc.job_queue[i].get_dur_time(); j++)
+            //{
+                //out << "# ";
+            //}
+            //out << '\n';
+        //}
+        //out << "Mixed" << std::setfill(' ') << std::setw(7) << '|';
+        //for(int i=0;i<sc.job_queue[0].get_arr_time();i++)
+        //{
+            //out<<"  ";
+        //}
         //out << std::setfill(' ') << std::setw(sc.job_queue[0].get_arr_time() * 2);
-        for (int i = 0; i < sc.get_job_num(); i++)
-        {
-            for (int j = 0; j < sc.job_queue[i].get_dur_time(); j++)
-            {
-                out << i + 1 << ' ';
-            }
-        }
-        out << '\n';
+        //for (int i = 0; i < sc.get_job_num(); i++)
+        //{
+            //for (int j = 0; j < sc.job_queue[i].get_dur_time(); j++)
+            //{
+                //out << i + 1 << ' ';
+            //}
+        //}
+        //out << '\n';
     }
 }
 
-void Scheduler::Display()
+void Scheduler::Display(std::queue<Job> q)
 {
-    // std::cout<<"Totally " << job_num << " jobs\n";
-    // std::cout<<'\n';
-    // std::cout<<"Gantt Chart"<<'\n';
-    // std::cout<<"======================================"<<'\n';
-
-    // for(auto it =job_queue.begin();it!=job_queue.end();it++)
-    // {
-    //     std::cout<<it->get_arr_time()<<" "<<it->get_cmd()<<" "<<it->get_dur_time()<<'\n';
-    // }
+    std::cout<<"Totally " << get_job_num() << " jobs, Time using: " << get_total_time()<<" s\n";
+    std::cout<<"======================================================================="<<'\n';
+    std::cout<<"Gantt Chart"<<'\n';
+    std::cout<<"======================================================================="<<'\n';
+    std::cout << "Time" << std::setfill(' ') << std::setw(5) << "|";
+     
+    for (int i = 0; i <= get_total_time()/ 10; i++)
+    {
+        std::cout << i;
+        std::cout << std::setfill(' ') << std::setw(20);
+    }   
+        
+    std::cout << '\n';
+    std::cout << std::setfill(' ') << std::setw(9) << '|';
+    for (int i = 0; i <= get_total_time() / 10; i++)
+    {
+        for (int j = 0; j <= 9; j++){ std::cout << j << ' ';}
+    }
+    std::cout << '\n';
+    
+    int stopindex = 0;
+    
+    while(!q.empty())
+    {
+         auto it = q.front();
+         q.pop();
+         
+         std::cout<<"Job " << it.ID <<std::setw(4) << "|";
+         int arr_time = it.get_arr_time();
+         int dur_time = it.get_dur_time();
+         for(int i=0; i<arr_time; ++i){ std::cout << " " << ' ';}
+         std::cout << "." << ' '; // arrive
+         for(int i=arr_time + 1; i<=get_total_time(); ++i){ 
+             if(i <= stopindex){std::cout << "." << ' ';}
+             else{
+                 std::cout << "#" << ' ';
+                 dur_time--;
+                 if(dur_time==0){stopindex = i; break;}
+             }
+         }
+         for(int i=stopindex + 1; i<=get_total_time(); ++i){ std::cout << " " << ' ';}
+         std::cout << std::endl;
+    }
 }
+
+
