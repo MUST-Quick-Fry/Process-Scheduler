@@ -56,3 +56,5 @@ bool Job::operator>(const Job & j) const
 {
     return this->duration > j.duration;
 }
+
+

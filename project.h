@@ -136,19 +136,20 @@ namespace Project{
         std::vector<Monitor> monitor_vector;
         
     };
+       
+    //std::ostream& operator<< (std::ostream& out,const Scheduler& sc);
     
-    
-    //RR scheduler with quantum set to 2 seconds
-    static int QUANT = 2;
+    // static variable & function
+    static int QUANT = 2;  //RR scheduler with quantum set to 2 seconds
     static Job this_job;
     static bool stop_flag = false;
     static bool allow_preem = true;
     
-    static std::vector<Job> job_queue;//job structure stored in vector
+    static std::vector<Job> job_queue; //job structure stored in vector
     static std::queue<Job> scheduler;
     static std::queue<Job> wait_queue;
-    static std::unordered_map<int, int> m; //monitor and child
-    static std::unordered_map<int ,int> monitor_map; // parent and monitor process
+    static std::unordered_map<int, int> m; //monitor and its child job
+    static std::unordered_map<int ,int> monitor_map; // main process and monitor process
   
     
     static void sig_handler(int sig){
@@ -222,8 +223,11 @@ namespace Project{
 
     }
     
+    static bool cmp(const Job &a, const Job &b){
+        if(a.get_arr_time() == b.get_arr_time()) return a.get_dur_time() < b.get_dur_time();
+        else{ return a.get_arr_time() < b.get_arr_time(); }
+    }
     
-    std::ostream& operator<< (std::ostream& out,const Scheduler& sc);
 }
 #endif
 
@@ -248,7 +252,8 @@ namespace Utils
     std::string readFile(const char* fileName);
     bool isSpace(char ch);     
     bool arg_check(char* str);
-    
-} // namespace Utils
+}
 
 #endif
+
+

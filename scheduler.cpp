@@ -95,7 +95,7 @@ void Scheduler::splitToken(std::string str)
         cnt++;
         if (cnt % 3 == 1)
         {
-            job.ID = cnt/3;
+            job.ID = cnt/3; // assign job id
             Utils::arg_check(token);
             std::string buf(token);
             job.set_arr_time(std::stoi(buf));
@@ -153,6 +153,7 @@ void Scheduler::choosePolicy()
 
 void Scheduler::driveFIFO()
 {
+    // create a scheduler
     std::priority_queue<Job,std::vector<Job>,std::less<Job> > pq_arr;
     int len = get_job_num();
     int time = 0;
@@ -181,7 +182,7 @@ void Scheduler::driveFIFO()
    
     while(!stop_flag){
     
-        //std::cout << "now time: " << realtime << std::endl;    
+        std::cout << "now time: " << realtime << " s" << std::endl;    
         
         while(!scheduler.empty() && realtime == scheduler.front().get_arr_time()){
             auto it = scheduler.front();
@@ -229,6 +230,7 @@ void Scheduler::driveFIFO()
     }
     
     if(pid !=0){ 
+        std::cout << "now time: " << realtime << " s" << std::endl;       
         while (1) {
             int result = wait(NULL);
             if (result == -1) {
@@ -244,11 +246,101 @@ void Scheduler::driveFIFO()
 
 void Scheduler::driveSJF1()
 {
+    // create a scheduler
+    std::vector<Job> pq_arr;
+    int len = get_job_num();
+    int time = 0;
+     
+    for(int i = 0; i < len; ++i){
+        pq_arr.emplace_back(job_queue[i]);  
+    }
     
+    sort(pq_arr.begin(), pq_arr.end(), cmp);
+    
+    time = pq_arr[0].get_arr_time();
+    
+    for(int i = 0; i < len; ++i){
+        auto it = pq_arr[i];
+        time += it.get_dur_time();
+        scheduler.emplace(it);
+    }
+    
+    // display
+    set_total_time(time);
+    Display(scheduler);
+    std::cout << std::endl;
+    
+    // execute
+    int realtime = 0;
+    int pid = 1;
+   
+    while(!stop_flag){
+    
+        std::cout << "now time: " << realtime << " s" << std::endl;    
+        
+        while(!scheduler.empty() && realtime == scheduler.front().get_arr_time()){
+            auto it = scheduler.front();
+            scheduler.pop();
+            
+            if(monitor_map[it.ID]==0){
+                pid = fork();
+                if(pid == 0){
+                    Monitor* monitor = new Monitor(it);                  
+                }
+                else{
+                    monitor_map[it.ID]=pid;
+                }
+            }
+            
+            
+            if(pid !=0){     
+                                           
+                     if(allow_preem){                 
+                         allow_preem = false;                                  
+                         this_job = it;
+                         
+                         
+                         signal(SIGALRM, job_FIFO);
+                         alarm(it.get_dur_time());
+                               
+                         sleep(0.1);                
+                         kill(monitor_map[it.ID], SIGCONT);    
+
+                     }
+                     else{
+                         wait_queue.emplace(it);
+                     }
+                 
+             }
+        }
+        
+        
+        if(pid!=0){         
+             sleep(1);          
+             realtime++;
+             
+        }
+                        
+    }
+    
+    if(pid !=0){ 
+        std::cout << "now time: " << realtime << " s" << std::endl;       
+        while (1) {
+            int result = wait(NULL);
+            if (result == -1) {
+                if (errno == EINTR) { continue;}
+
+                break;
+            }
+        }
+
+    }
+ 
 }
 
 void Scheduler::driveRR(){
     
+    // create a schedule
     std::priority_queue<Job,std::vector<Job>,std::less<Job> > pq_arr;
     std::queue<Job> wait_q; 
     int len = get_job_num();
@@ -256,14 +348,34 @@ void Scheduler::driveRR(){
     for(int i = 0; i < len; ++i){
         pq_arr.emplace(job_queue[i]);  
     }
-    
-    // create a schedule
+       
     int time = 0;
-    bool stop = false;
+    int wait_for_empty = 0;
    
-    while(!stop){
-        if(pq_arr.empty() || time < pq_arr.top().get_arr_time()){
-            if(wait_q.empty()){time++;}
+    while(true){
+                                 
+        while(!pq_arr.empty() && time == pq_arr.top().get_arr_time()){
+            Job tmp = pq_arr.top();
+            pq_arr.pop(); 
+                
+            if(tmp.get_dur_time() > QUANT){
+                tmp.service_time_left = tmp.get_dur_time();
+                scheduler.emplace(tmp);
+                scheduler.back().set_dur_time(QUANT);
+                tmp.set_dur_time(tmp.get_dur_time()-QUANT);
+                wait_q.emplace(tmp);
+                wait_for_empty += QUANT;
+            }
+            else{
+                tmp.service_time_left = tmp.get_dur_time();
+                scheduler.emplace(tmp);
+                wait_for_empty += tmp.get_dur_time();
+            }
+                 
+        }
+        
+        if(wait_for_empty == 0){
+            if(wait_q.empty()){;}
             else{
                 Job tmp2 = wait_q.front();
                 wait_q.pop();
@@ -271,41 +383,27 @@ void Scheduler::driveRR(){
                 if(tmp2.get_dur_time() > QUANT){
                     tmp2.service_time_left = tmp2.get_dur_time();
                     scheduler.emplace(tmp2);
+                    scheduler.back().set_dur_time(QUANT);
                     tmp2.set_dur_time(tmp2.get_dur_time()-QUANT);
                     wait_q.emplace(tmp2);
-                    time += QUANT;
+                    wait_for_empty += QUANT;
                 }
                 else{
                     tmp2.service_time_left = tmp2.get_dur_time();
                     scheduler.emplace(tmp2);
-                    time += tmp2.get_dur_time();
+                    wait_for_empty += tmp2.get_dur_time();
                 }
             }
         }
-        else{
-            Job tmp = pq_arr.top();
-            pq_arr.pop(); 
-            
-            if(tmp.get_dur_time() > QUANT){
-                 tmp.service_time_left = tmp.get_dur_time();
-                 scheduler.emplace(tmp);
-                 scheduler.back().set_dur_time(QUANT);
-                 tmp.set_dur_time(tmp.get_dur_time()-QUANT);
-                 wait_q.emplace(tmp);
-                 time += QUANT;
-             }
-             else{
-                 tmp.service_time_left = tmp.get_dur_time();
-                 scheduler.emplace(tmp);
-                 time += tmp.get_dur_time();
-             }
         
-        }
+        time++;
+        if(wait_for_empty > 0){wait_for_empty--;}
         
-        if(wait_q.empty() && pq_arr.empty()){stop = true;}
+        if(wait_q.empty() && pq_arr.empty()){break;}    
     }
     
-    // draw scheduler
+        
+    // display
     set_total_time(time);
     Display(scheduler);
     std::cout << std::endl;
@@ -325,9 +423,8 @@ void Scheduler::driveRR(){
     int pid = 1;
         
     while(!stop_flag)
-    {
-    
-         std::cout << "now time: " << realtime << std::endl;    
+    { 
+         std::cout << "now time: " << realtime << " s" << std::endl;    
          
          while(!scheduler.empty() && realtime == scheduler.front().get_arr_time()){
                 auto it = scheduler.front();                      
@@ -373,6 +470,7 @@ void Scheduler::driveRR(){
     }
     
     if(pid !=0){ 
+        std::cout << "now time: " << realtime << " s" << std::endl;     
         while (1) {
             int result = wait(NULL);
             if (result == -1) {
