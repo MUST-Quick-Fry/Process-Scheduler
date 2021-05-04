@@ -14,6 +14,7 @@
 #include <queue>
 
 using namespace Project;
+using namespace std;
 
 void Scheduler::set_total_time(int now)
 {
@@ -32,16 +33,16 @@ int Scheduler::get_job_num() const
 
 Scheduler::Scheduler(char *f, char *p) : policyInfo(p)
 {
-    std::string tmp = Utils::readFile(f);
+    string tmp = Utils::readFile(f);
     normalizeCheck(tmp);
     splitToken(tmp);
     job_num = job_queue.size();
     choosePolicy();
-    //std::sort(job_queue.begin(),job_queue.end());
+    //sort(job_queue.begin(),job_queue.end());
     //schedulerDrive();
 }
 
-void Scheduler::normalizeCheck(std::string cont)
+void Scheduler::normalizeCheck(string cont)
 {
 
     int arg_num = 0;
@@ -55,24 +56,24 @@ void Scheduler::normalizeCheck(std::string cont)
             {
                 if (cont[i - 2] == '\t')
                 {
-                    throw std::invalid_argument("Argument Error: Empty argument!");
+                    throw invalid_argument("Argument Error: Empty argument!");
                 }
                 continue;
             }
 
             if (cont[i - 1] == '\t')
             {
-                throw std::invalid_argument("Argument Error: Empty argument!");
+                throw invalid_argument("Argument Error: Empty argument!");
             }
 
             arg_num++;
             if (arg_num > 3)
             {
-                throw std::invalid_argument("Argument Error: Job description file has redundant arguments!");
+                throw invalid_argument("Argument Error: Job description file has redundant arguments!");
             }
             if (arg_num < 3)
             {
-                throw std::invalid_argument("Argument Error: Job description file has less arguments!");
+                throw invalid_argument("Argument Error: Job description file has less arguments!");
             }
             arg_num = 0;
         }
@@ -83,7 +84,7 @@ void Scheduler::normalizeCheck(std::string cont)
     }
 }
 
-void Scheduler::splitToken(std::string str)
+void Scheduler::splitToken(string str)
 {
     int cnt = 0;
     char *strBuf = const_cast<char *>(str.c_str());
@@ -95,21 +96,21 @@ void Scheduler::splitToken(std::string str)
         cnt++;
         if (cnt % 3 == 1)
         {
-            job.ID = cnt/3; // assign job id
+            job.ID = 1 + cnt/3; // assign job id
             Utils::arg_check(token);
-            std::string buf(token);
-            job.set_arr_time(std::stoi(buf));
+            string buf(token);
+            job.set_arr_time(stoi(buf));
         }
         else if (cnt % 3 == 2)
         {
-            std::string buf(token);
+            string buf(token);
             job.set_cmd(buf);
         }
         else
         {
             Utils::arg_check(token);
-            std::string buf(token);
-            job.set_dur_time(std::stoi(buf));
+            string buf(token);
+            job.set_dur_time(stoi(buf));
             job_queue.push_back(job);
         }
         token = strtok(NULL, "\t\n");
@@ -118,12 +119,10 @@ void Scheduler::splitToken(std::string str)
 
 void Scheduler::choosePolicy()
 {
-    sort(job_queue.begin(), job_queue.end());
-    std::cout<< "Totally "<<job_queue.size()<<" jobs are ready!" <<'\n';
     auto cho = policyMap.find(policyInfo);
     if (cho == policyMap.end())
     {
-        throw std::invalid_argument("Invalid policy!");
+        throw invalid_argument("Invalid policy!");
         exit(-1);
     }
     switch (cho->second)
@@ -145,36 +144,37 @@ void Scheduler::choosePolicy()
         driveRR();
         break;
     default:
-        throw std::invalid_argument("Invalid policy!");
+        throw invalid_argument("Invalid policy!");
         break;
     }
-    //std::cout << *this;
+    //cout << *this;
 }
 
 void Scheduler::driveFIFO()
 {
     // create a scheduler
-    std::priority_queue<Job,std::vector<Job>,std::less<Job> > pq_arr;
+    vector<Job> pq_arr;
     int len = get_job_num();
     int time = 0;
      
     for(int i = 0; i < len; ++i){
-        pq_arr.emplace(job_queue[i]);  
+        pq_arr.emplace_back(job_queue[i]);  
     }
     
-    time = pq_arr.top().get_arr_time();
+    sort(pq_arr.begin(), pq_arr.end()); 
     
-    while(!pq_arr.empty()){
-        auto it = pq_arr.top();
+    time = pq_arr[0].get_arr_time();
+    
+    for(int i = 0; i < len; ++i){
+        auto it = pq_arr[i];
         time += it.get_dur_time();
         scheduler.emplace(it);
-        pq_arr.pop();
     }
     
     // display
     set_total_time(time);
     Display(scheduler);
-    std::cout << std::endl;
+    cout << endl;
     
     // execute
     int realtime = 0;
@@ -182,7 +182,7 @@ void Scheduler::driveFIFO()
    
     while(!stop_flag){
     
-        std::cout << "now time: " << realtime << " s" << std::endl;    
+        cout << "now time: " << realtime << " s" << endl;    
         
         while(!scheduler.empty() && realtime == scheduler.front().get_arr_time()){
             auto it = scheduler.front();
@@ -206,7 +206,7 @@ void Scheduler::driveFIFO()
                          this_job = it;
                          
                          
-                         signal(SIGALRM, job_FIFO);
+                         signal(SIGALRM, signal_nonpreem);
                          alarm(it.get_dur_time());
                                
                          sleep(0.1);                
@@ -230,7 +230,7 @@ void Scheduler::driveFIFO()
     }
     
     if(pid !=0){ 
-        std::cout << "now time: " << realtime << " s" << std::endl;       
+        cout << "now time: " << realtime << " s" << endl;       
         while (1) {
             int result = wait(NULL);
             if (result == -1) {
@@ -247,7 +247,7 @@ void Scheduler::driveFIFO()
 void Scheduler::driveSJF1()
 {
     // create a scheduler
-    std::vector<Job> pq_arr;
+    vector<Job> pq_arr;
     int len = get_job_num();
     int time = 0;
      
@@ -255,7 +255,10 @@ void Scheduler::driveSJF1()
         pq_arr.emplace_back(job_queue[i]);  
     }
     
-    sort(pq_arr.begin(), pq_arr.end(), cmp);
+    sort(pq_arr.begin(), pq_arr.end(), [](const Job &a, const Job &b)->bool
+    {   if(a.get_arr_time() == b.get_arr_time()){return a.get_dur_time() < b.get_dur_time();}
+        else{return a.get_arr_time() < b.get_arr_time();}
+    });
     
     time = pq_arr[0].get_arr_time();
     
@@ -268,7 +271,7 @@ void Scheduler::driveSJF1()
     // display
     set_total_time(time);
     Display(scheduler);
-    std::cout << std::endl;
+    cout << endl;
     
     // execute
     int realtime = 0;
@@ -276,7 +279,7 @@ void Scheduler::driveSJF1()
    
     while(!stop_flag){
     
-        std::cout << "now time: " << realtime << " s" << std::endl;    
+        cout << "now time: " << realtime << " s" << endl;    
         
         while(!scheduler.empty() && realtime == scheduler.front().get_arr_time()){
             auto it = scheduler.front();
@@ -300,7 +303,7 @@ void Scheduler::driveSJF1()
                          this_job = it;
                          
                          
-                         signal(SIGALRM, job_FIFO);
+                         signal(SIGALRM, signal_nonpreem);
                          alarm(it.get_dur_time());
                                
                          sleep(0.1);                
@@ -324,7 +327,7 @@ void Scheduler::driveSJF1()
     }
     
     if(pid !=0){ 
-        std::cout << "now time: " << realtime << " s" << std::endl;       
+        cout << "now time: " << realtime << " s" << endl;       
         while (1) {
             int result = wait(NULL);
             if (result == -1) {
@@ -341,8 +344,8 @@ void Scheduler::driveSJF1()
 void Scheduler::driveRR(){
     
     // create a schedule
-    std::priority_queue<Job,std::vector<Job>,std::less<Job> > pq_arr;
-    std::queue<Job> wait_q; 
+    priority_queue<Job,vector<Job>,greater<Job> > pq_arr;
+    queue<Job> wait_q; 
     int len = get_job_num();
      
     for(int i = 0; i < len; ++i){
@@ -406,13 +409,13 @@ void Scheduler::driveRR(){
     // display
     set_total_time(time);
     Display(scheduler);
-    std::cout << std::endl;
+    cout << endl;
     
     /*
     
     // display
     while(!scheduler.empty()){
-        std::cout << scheduler.front().ID << " " << scheduler.front().get_arr_time() << " " << scheduler.front().service_time_left << std::endl;
+        cout << scheduler.front().ID << " " << scheduler.front().get_arr_time() << " " << scheduler.front().service_time_left << endl;
         scheduler.pop();
     }
     
@@ -424,7 +427,7 @@ void Scheduler::driveRR(){
         
     while(!stop_flag)
     { 
-         std::cout << "now time: " << realtime << " s" << std::endl;    
+         cout << "now time: " << realtime << " s" << endl;    
          
          while(!scheduler.empty() && realtime == scheduler.front().get_arr_time()){
                 auto it = scheduler.front();                      
@@ -445,13 +448,13 @@ void Scheduler::driveRR(){
                          allow_preem = false;                                  
                          this_job = it;
                          
-                         signal(SIGALRM, job_stop);
+                         signal(SIGALRM, signal_preem);
                          alarm(it.get_dur_time());
                             
                          sleep(0.1);                
                          kill(monitor_map[it.ID], SIGCONT);    
                             
-                         //std::cout << "allo_preem " << allow_preem<<std::endl;
+                         //cout << "allo_preem " << allow_preem<<endl;
                      }
                      else{
                          wait_queue.emplace(it);
@@ -470,7 +473,7 @@ void Scheduler::driveRR(){
     }
     
     if(pid !=0){ 
-        std::cout << "now time: " << realtime << " s" << std::endl;     
+        cout << "now time: " << realtime << " s" << endl;     
         while (1) {
             int result = wait(NULL);
             if (result == -1) {
@@ -490,7 +493,7 @@ void Scheduler::driveSJF2(){
 
 namespace Project
 {
-    std::ostream &operator<<(std::ostream &out, const Scheduler &sc)
+    ostream &operator<<(ostream &out, const Scheduler &sc)
     {
         out << "End" <<'\n';
         //out << "Totally " << sc.get_job_num() << " jobs\n";
@@ -498,14 +501,14 @@ namespace Project
         //out << "-----------------------------------------------------------------------------------------------" << '\n';
         //out << "Gantt Chart" << '\n';
         //out << "-----------------------------------------------------------------------------------------------" << '\n';
-        //out << "Time" << std::setfill(' ') << std::setw(8) << '|';
+        //out << "Time" << setfill(' ') << setw(8) << '|';
         //for (int i = 0; i <= sc.get_total_time() / 10; i++)
         //{
             //out << i;
-            //out << std::setfill(' ') << std::setw(20);
+            //out << setfill(' ') << setw(20);
         //}
         //out << '\n';
-        //out << std::setfill(' ') << std::setw(12) << '|';
+        //out << setfill(' ') << setw(12) << '|';
         //for (int i = 0; i <= sc.get_total_time() / 10; i++)
         //{
             //for (int j = 0; j <= 9; j++)
@@ -516,7 +519,7 @@ namespace Project
         //out << '\n';
         //for (int i = 0; i < sc.get_job_num(); i++)
         //{
-            //out << "Job " << i + 1 << std::setfill(' ') << std::setw(7) << '|';
+            //out << "Job " << i + 1 << setfill(' ') << setw(7) << '|';
             //for(int j=0;j<sc.job_queue[i].get_arr_time()-sc.job_queue[i].get_wait_time()
             //;j++){
                 //out<<"  ";
@@ -531,12 +534,12 @@ namespace Project
             //}
             //out << '\n';
         //}
-        //out << "Mixed" << std::setfill(' ') << std::setw(7) << '|';
+        //out << "Mixed" << setfill(' ') << setw(7) << '|';
         //for(int i=0;i<sc.job_queue[0].get_arr_time();i++)
         //{
             //out<<"  ";
         //}
-        //out << std::setfill(' ') << std::setw(sc.job_queue[0].get_arr_time() * 2);
+        //out << setfill(' ') << setw(sc.job_queue[0].get_arr_time() * 2);
         //for (int i = 0; i < sc.get_job_num(); i++)
         //{
             //for (int j = 0; j < sc.job_queue[i].get_dur_time(); j++)
@@ -548,27 +551,27 @@ namespace Project
     }
 }
 
-void Scheduler::Display(std::queue<Job> q)
+void Scheduler::Display(queue<Job> q)
 {
-    std::cout<<"Totally " << get_job_num() << " jobs, Time using: " << get_total_time()<<" s\n";
-    std::cout<<"======================================================================="<<'\n';
-    std::cout<<"Gantt Chart"<<'\n';
-    std::cout<<"======================================================================="<<'\n';
-    std::cout << "Time" << std::setfill(' ') << std::setw(5) << "|";
+    cout<<"Totally " << get_job_num() << " jobs, Time using: " << get_total_time()<<" s\n";
+    cout<<"======================================================================="<<'\n';
+    cout<<"Gantt Chart"<<'\n';
+    cout<<"======================================================================="<<'\n';
+    cout << "Time" << setfill(' ') << setw(5) << "|";
      
     for (int i = 0; i <= get_total_time()/ 10; i++)
     {
-        std::cout << i;
-        std::cout << std::setfill(' ') << std::setw(20);
+        cout << i;
+        cout << setfill(' ') << setw(20);
     }   
         
-    std::cout << '\n';
-    std::cout << std::setfill(' ') << std::setw(9) << '|';
+    cout << '\n';
+    cout << setfill(' ') << setw(9) << '|';
     for (int i = 0; i <= get_total_time() / 10; i++)
     {
-        for (int j = 0; j <= 9; j++){ std::cout << j << ' ';}
+        for (int j = 0; j <= 9; j++){ cout << j << ' ';}
     }
-    std::cout << '\n';
+    cout << '\n';
     
     int stopindex = 0;
     
@@ -577,21 +580,21 @@ void Scheduler::Display(std::queue<Job> q)
          auto it = q.front();
          q.pop();
          
-         std::cout<<"Job " << it.ID <<std::setw(4) << "|";
+         cout<<"Job " << it.ID <<setw(4) << "|";
          int arr_time = it.get_arr_time();
          int dur_time = it.get_dur_time();
-         for(int i=0; i<arr_time; ++i){ std::cout << " " << ' ';}
-         std::cout << "." << ' '; // arrive
+         for(int i=0; i<arr_time; ++i){ cout << " " << ' ';}
+         cout << "." << ' '; // arrive
          for(int i=arr_time + 1; i<=get_total_time(); ++i){ 
-             if(i <= stopindex){std::cout << "." << ' ';}
+             if(i <= stopindex){cout << "." << ' ';}
              else{
-                 std::cout << "#" << ' ';
+                 cout << "#" << ' ';
                  dur_time--;
                  if(dur_time==0){stopindex = i; break;}
              }
          }
-         for(int i=stopindex + 1; i<=get_total_time(); ++i){ std::cout << " " << ' ';}
-         std::cout << std::endl;
+         for(int i=stopindex + 1; i<=get_total_time(); ++i){ cout << " " << ' ';}
+         cout << endl;
     }
 }
 

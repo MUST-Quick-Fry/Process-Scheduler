@@ -156,19 +156,19 @@ namespace Project{
         std::cout << std::endl;
         if(sig==SIGTSTP){ 
             std::cout << "The Job is suspended ..." << std::endl;
-            std::cout << m[getpid()]<< std::endl;
+            //std::cout << m[getpid()]<< std::endl;
             kill(m[getpid()], SIGTSTP);         
             signal(SIGTSTP, sig_handler);
         }
         else if(sig==SIGCONT){ 
             std::cout << "The Job resumes ... " << std::endl;
-            std::cout <<m[getpid()] << std::endl;
+            //std::cout <<m[getpid()] << std::endl;
             kill(m[getpid()], SIGCONT);
             signal(SIGCONT, sig_handler);
         }
         else if(sig==SIGTERM){
             std::cout << "The Job terminate ... " << std::endl;
-            std::cout <<m[getpid()] << " " << getpid() <<std::endl;
+            //std::cout <<m[getpid()] << " " << getpid() <<std::endl;
             kill(m[getpid()], SIGKILL);
             //signal(SIGTERM, sig_handler);
         }
@@ -176,7 +176,7 @@ namespace Project{
     }
     
     // handle arrival time
-    static void job_stop(int sig){
+    static void signal_preem(int sig){
         
         if(scheduler.empty() && wait_queue.empty()){stop_flag = true;}
         
@@ -194,14 +194,15 @@ namespace Project{
             kill(monitor_map[tmp.ID], SIGCONT);   
             this_job = tmp;
 
-            signal(SIGALRM, job_stop);
+            signal(SIGALRM, signal_preem);
             alarm(tmp.get_dur_time());
         }
         else{allow_preem = true; }
 
     }
     
-    static void job_FIFO(int sig){
+    // non-preemptive alarm signal
+    static void signal_nonpreem(int sig){
         
         std::cout << wait_queue.size() <<std::endl;
         
@@ -216,16 +217,11 @@ namespace Project{
             kill(monitor_map[tmp.ID], SIGCONT);   
             this_job = tmp;
 
-            signal(SIGALRM, job_FIFO);
+            signal(SIGALRM, signal_nonpreem);
             alarm(tmp.get_dur_time());
         }
         else{allow_preem = true; }
 
-    }
-    
-    static bool cmp(const Job &a, const Job &b){
-        if(a.get_arr_time() == b.get_arr_time()) return a.get_dur_time() < b.get_dur_time();
-        else{ return a.get_arr_time() < b.get_arr_time(); }
     }
     
 }
