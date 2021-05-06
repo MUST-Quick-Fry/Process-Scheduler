@@ -5,7 +5,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/types.h>
@@ -344,9 +343,11 @@ void Scheduler::driveSJF1()
 void Scheduler::driveRR(){
     
     // create a schedule
-    priority_queue<Job,vector<Job>,greater<Job> > pq_arr;
+    queue<Job> pq_arr;
     queue<Job> wait_q; 
     int len = get_job_num();
+     
+    sort(job_queue.begin(), job_queue.end());
      
     for(int i = 0; i < len; ++i){
         pq_arr.emplace(job_queue[i]);  
@@ -357,8 +358,8 @@ void Scheduler::driveRR(){
    
     while(true){
                                  
-        while(!pq_arr.empty() && time == pq_arr.top().get_arr_time()){
-            Job tmp = pq_arr.top();
+        while(!pq_arr.empty() && time == pq_arr.front().get_arr_time()){
+            Job tmp = pq_arr.front();
             pq_arr.pop(); 
                 
             if(tmp.get_dur_time() > QUANT){
@@ -448,7 +449,7 @@ void Scheduler::driveRR(){
                          allow_preem = false;                                  
                          this_job = it;
                          
-                         signal(SIGALRM, signal_preem);
+                         signal(SIGALRM, signal_RR);
                          alarm(it.get_dur_time());
                             
                          sleep(0.1);                
@@ -488,6 +489,181 @@ void Scheduler::driveRR(){
 }
 
 void Scheduler::driveSJF2(){
+
+    // create a schedule
+    queue<Job> pq_arr; 
+    priority_queue<Job,vector<Job>,greater<Job> > wait_q; 
+    int len = get_job_num();
+         
+    sort(job_queue.begin(), job_queue.end(), [](const Job &a, const Job &b)->bool
+    {   if(a.get_arr_time() == b.get_arr_time()){return a.get_dur_time() < b.get_dur_time();}
+        else{return a.get_arr_time() < b.get_arr_time();}
+    });
+         
+    for(int i = 0; i < len; ++i){
+        pq_arr.emplace(job_queue[i]);  
+    }
+       
+      
+    int time = 0;
+    Job con;
+    con.ID = 0;
+    unordered_map<int, int> jobmap;
+    Job lastjob = con;
+    
+    while(true){                                          
+        while(!pq_arr.empty() && time == pq_arr.front().get_arr_time()){
+            Job tmp = pq_arr.front();
+            pq_arr.pop(); 
+            
+            if(!wait_q.empty() && tmp.get_dur_time() < wait_q.top().get_dur_time() && wait_q.top().ID == lastjob.ID)
+                wait_q.pop();
+            wait_q.emplace(tmp);         
+        }
+        
+   
+        if(!wait_q.empty()){
+            
+            Job it = wait_q.top();
+            wait_q.pop();
+            
+            if(lastjob.ID == it.ID || lastjob.ID == 0){
+            
+                if(jobmap[it.ID] == 0){
+                    scheduler.emplace(it);
+                    jobmap[it.ID] = 1;
+                }
+            
+                it.has_exp_time++;
+                it.set_dur_time(it.get_dur_time()-1);
+                           
+                if(it.get_dur_time() == 0){
+                    scheduler.back().set_dur_time(it.has_exp_time);
+                    scheduler.back().service_time_left = 2;
+                    //cout << scheduler.back().ID << " arr " << scheduler.back().get_arr_time() << " dur "<< scheduler.back().get_dur_time()<< endl;
+                    jobmap[it.ID] = 0;
+                    lastjob = con;
+                }
+                else{ 
+                    if(wait_q.empty() || it.get_dur_time() < wait_q.top().get_dur_time())
+                        wait_q.emplace(it); 
+                        
+                    lastjob = it;
+                }
+                
+            }
+            else{
+                scheduler.back().set_dur_time(lastjob.has_exp_time);
+                //cout << scheduler.back().ID << " arr " << scheduler.back().get_arr_time() << " dur "<< scheduler.back().get_dur_time()<< endl;
+                jobmap[lastjob.ID] = 0;
+                lastjob.has_exp_time = 0;
+                lastjob.set_arr_time(time);
+                wait_q.emplace(lastjob);
+                
+             
+                if(jobmap[it.ID] == 0){
+                    scheduler.emplace(it);
+                    jobmap[it.ID] = 1;
+                }
+            
+                it.has_exp_time++;
+                it.set_dur_time(it.get_dur_time()-1);
+                
+                
+                if(it.get_dur_time() == 0){
+                    scheduler.back().set_dur_time(it.has_exp_time);
+                    scheduler.back().service_time_left = 2;
+                    //cout << scheduler.back().ID << " arr " << scheduler.back().get_arr_time() << " dur "<< scheduler.back().get_dur_time()<< endl;
+                    jobmap[it.ID] = 0;
+                    lastjob = con;
+                }
+                else{ 
+                    if(wait_q.empty() || it.get_dur_time() < wait_q.top().get_dur_time())
+                        wait_q.emplace(it); 
+                        
+                    lastjob = it;
+                }            
+                
+            }
+                
+                
+        }
+        
+        time++;
+        //cout << "now is " << time << " " << wait_q.size() << endl;
+        if(wait_q.empty() && pq_arr.empty()){break;}    
+    }
+    
+       
+    // display
+    set_total_time(time);
+    Display(scheduler);
+    cout << endl;
+    
+    
+    // execute
+    int realtime = 0;
+    int pid = 1;
+        
+    while(!stop_flag)
+    { 
+         cout << "now time: " << realtime << " s" << endl;    
+         
+         while(!scheduler.empty() && realtime == scheduler.front().get_arr_time()){
+                auto it = scheduler.front();                      
+                scheduler.pop();
+             
+                if(monitor_map[it.ID]==0){
+                     pid = fork();
+                     if(pid == 0){
+                         Monitor* monitor = new Monitor(it);                  
+                     }
+                     else{
+                         monitor_map[it.ID]=pid;
+                     }
+                 }
+                  
+                 if(pid !=0){                                   
+                     if(allow_preem){                 
+                         allow_preem = false;                                  
+                         this_job = it;
+                         
+                         signal(SIGALRM, signal_preemSJF);
+                         alarm(it.get_dur_time());
+                            
+                         sleep(0.1);                
+                         kill(monitor_map[it.ID], SIGCONT);    
+                            
+                         //cout << "allo_preem " << allow_preem<<endl;
+                     }
+                     else{
+                         wait_queue.emplace(it);
+                     }
+                 
+                 }
+ 
+         }
+         
+         if(pid!=0){      
+             sleep(1);            
+             realtime++;
+
+         }
+                        
+    }
+    
+    if(pid !=0){ 
+        cout << "now time: " << realtime << " s" << endl;     
+        while (1) {
+            int result = wait(NULL);
+            if (result == -1) {
+                if (errno == EINTR) { continue;}
+
+                break;
+            }
+        }
+
+    }
     
 }
 

@@ -26,6 +26,7 @@ namespace Project{
     public:
         int ID;
         int service_time_left;
+        int has_exp_time;
         
         void set_wait_time(int wait);
         void set_cmd(std::string cmd);
@@ -175,8 +176,8 @@ namespace Project{
         
     }
     
-    // handle arrival time
-    static void signal_preem(int sig){
+    // handle RR problem
+    static void signal_RR(int sig){
         
         if(scheduler.empty() && wait_queue.empty()){stop_flag = true;}
         
@@ -194,7 +195,33 @@ namespace Project{
             kill(monitor_map[tmp.ID], SIGCONT);   
             this_job = tmp;
 
-            signal(SIGALRM, signal_preem);
+            signal(SIGALRM, signal_RR);
+            alarm(tmp.get_dur_time());
+        }
+        else{allow_preem = true; }
+
+    }
+    
+    // handle RR problem
+    static void signal_preemSJF(int sig){
+        
+        if(scheduler.empty() && wait_queue.empty()){stop_flag = true;}
+        
+        if(this_job.service_time_left == 2){
+            kill(monitor_map[this_job.ID], SIGTERM);  
+        }
+        else{
+            kill(monitor_map[this_job.ID], SIGTSTP);
+        }
+    
+        if(!wait_queue.empty()){
+            auto tmp = wait_queue.front();
+            wait_queue.pop();
+
+            kill(monitor_map[tmp.ID], SIGCONT);   
+            this_job = tmp;
+
+            signal(SIGALRM, signal_preemSJF);
             alarm(tmp.get_dur_time());
         }
         else{allow_preem = true; }
@@ -204,7 +231,7 @@ namespace Project{
     // non-preemptive alarm signal
     static void signal_nonpreem(int sig){
         
-        std::cout << wait_queue.size() <<std::endl;
+        //std::cout << wait_queue.size() <<std::endl;
         
         if(scheduler.empty() && wait_queue.empty()){stop_flag = true;}
             
