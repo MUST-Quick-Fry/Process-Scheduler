@@ -94,7 +94,6 @@ Monitor::Monitor(Job j):job(j)
 	// parent process
         waitpid(process,&status,0);
         std::cout<<"Child Process Terminate"<<std::endl;
-        cout << "Terminate the Parent Process !" << endl;
                  
         //std::cout << getpid() << " " << m[getpid()] << std::endl;
 
@@ -116,7 +115,6 @@ Monitor::Monitor(Job j):job(j)
         cout << endl;
         print_time();
         
-        kill(getpid(), SIGKILL); //kill self
     }
     
     

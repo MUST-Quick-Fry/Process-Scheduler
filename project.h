@@ -169,8 +169,8 @@ namespace Project{
         }
         else if(sig==SIGTERM){
             std::cout << "The Job terminate ... " << std::endl;
-            //std::cout <<m[getpid()] << " " << getpid() <<std::endl;
-            kill(m[getpid()], SIGKILL);
+            //std::cout <<m[getpid()] << " child " <<std::endl;
+            kill(m[getpid()], SIGTERM);
             //signal(SIGTERM, sig_handler);
         }
         

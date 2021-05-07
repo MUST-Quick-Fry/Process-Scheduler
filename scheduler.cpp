@@ -190,7 +190,7 @@ void Scheduler::driveFIFO()
             if(monitor_map[it.ID]==0){
                 pid = fork();
                 if(pid == 0){
-                    Monitor* monitor = new Monitor(it);                  
+                    Monitor* monitor = new Monitor(it);                
                 }
                 else{
                     monitor_map[it.ID]=pid;
@@ -246,25 +246,43 @@ void Scheduler::driveFIFO()
 void Scheduler::driveSJF1()
 {
     // create a scheduler
-    vector<Job> pq_arr;
+    priority_queue<Job,vector<Job>,greater<Job> > wait_q; 
+    queue<Job> pq_arr;
     int len = get_job_num();
     int time = 0;
-     
-    for(int i = 0; i < len; ++i){
-        pq_arr.emplace_back(job_queue[i]);  
-    }
-    
-    sort(pq_arr.begin(), pq_arr.end(), [](const Job &a, const Job &b)->bool
+        
+    sort(job_queue.begin(), job_queue.end(), [](const Job &a, const Job &b)->bool
     {   if(a.get_arr_time() == b.get_arr_time()){return a.get_dur_time() < b.get_dur_time();}
         else{return a.get_arr_time() < b.get_arr_time();}
     });
     
-    time = pq_arr[0].get_arr_time();
-    
     for(int i = 0; i < len; ++i){
-        auto it = pq_arr[i];
-        time += it.get_dur_time();
-        scheduler.emplace(it);
+        pq_arr.emplace(job_queue[i]);  
+    }
+    
+    time = pq_arr.front().get_arr_time();
+    
+    while(true){
+    
+        if(!wait_q.empty()){
+            auto it = wait_q.top();
+            wait_q.pop();
+            time += it.get_dur_time();
+            scheduler.emplace(it);    
+        }
+    
+        if(!pq_arr.empty()){
+            auto it = pq_arr.front();
+            pq_arr.pop();
+            time += it.get_dur_time();
+            scheduler.emplace(it);
+        
+            while(!pq_arr.empty() && pq_arr.front().get_arr_time()<=time){
+                wait_q.emplace(pq_arr.front());
+                pq_arr.pop();
+            }
+        }
+        if(pq_arr.empty() && wait_q.empty()){break;}
     }
     
     // display
@@ -277,7 +295,7 @@ void Scheduler::driveSJF1()
     int pid = 1;
    
     while(!stop_flag){
-    
+     
         cout << "now time: " << realtime << " s" << endl;    
         
         while(!scheduler.empty() && realtime == scheduler.front().get_arr_time()){
@@ -287,9 +305,11 @@ void Scheduler::driveSJF1()
             if(monitor_map[it.ID]==0){
                 pid = fork();
                 if(pid == 0){
-                    Monitor* monitor = new Monitor(it);                  
+                    Monitor* monitor = new Monitor(it);      
+                    cout << "Terminate the Parent Process: " << getpid() <<endl;    
+                    exit(0);          
                 }
-                else{
+                else{ 
                     monitor_map[it.ID]=pid;
                 }
             }
@@ -300,14 +320,13 @@ void Scheduler::driveSJF1()
                      if(allow_preem){                 
                          allow_preem = false;                                  
                          this_job = it;
-                         
-                         
+                        
                          signal(SIGALRM, signal_nonpreem);
                          alarm(it.get_dur_time());
-                               
-                         sleep(0.1);                
-                         kill(monitor_map[it.ID], SIGCONT);    
-
+                        
+                         sleep(0.2);
+                         kill(monitor_map[it.ID], SIGCONT);
+ 
                      }
                      else{
                          wait_queue.emplace(it);
@@ -317,14 +336,14 @@ void Scheduler::driveSJF1()
         }
         
         
-        if(pid!=0){         
-             sleep(1);          
+        if(pid!=0){       
+             sleep(1); 
              realtime++;
-             
+                          
         }
                         
     }
-    
+/*
     if(pid !=0){ 
         cout << "now time: " << realtime << " s" << endl;       
         while (1) {
@@ -337,7 +356,7 @@ void Scheduler::driveSJF1()
         }
 
     }
- 
+   */  
 }
 
 void Scheduler::driveRR(){
