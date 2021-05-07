@@ -87,10 +87,7 @@ Monitor::Monitor(Job j):job(j)
         
         //cout << process << " " << getpid() << endl;
                             
-        
-        kill(process, SIGTSTP);
-        std::cout<<"Child Process Suspend" << std::endl;
-
+  
 	// parent process
         waitpid(process,&status,0);
         std::cout<<"Child Process Terminate"<<std::endl;

@@ -1,4 +1,5 @@
 #include "project.h"
+#include <stdio.h>
 #include <iostream>
 #include <algorithm>
 #include <vector>
@@ -180,19 +181,24 @@ void Scheduler::driveFIFO()
     int pid = 1;
    
     while(!stop_flag){
-    
+     
         cout << "now time: " << realtime << " s" << endl;    
         
-        while(!scheduler.empty() && realtime == scheduler.front().get_arr_time()){
+        while(!scheduler.empty() && realtime <= scheduler.front().get_arr_time()){
             auto it = scheduler.front();
             scheduler.pop();
-            
+                        
             if(monitor_map[it.ID]==0){
                 pid = fork();
                 if(pid == 0){
-                    Monitor* monitor = new Monitor(it);                
+                    Monitor* monitor = new Monitor(it);                       
+                    cout << "Terminate the Parent Process: " << getpid() <<endl;     
+                    
+                    //kill(getpid(), SIGKILL);
+                    exit(0);
+  
                 }
-                else{
+                else{ 
                     monitor_map[it.ID]=pid;
                 }
             }
@@ -203,31 +209,29 @@ void Scheduler::driveFIFO()
                      if(allow_preem){                 
                          allow_preem = false;                                  
                          this_job = it;
-                         
-                         
+                        
                          signal(SIGALRM, signal_nonpreem);
                          alarm(it.get_dur_time());
-                               
-                         sleep(0.1);                
-                         kill(monitor_map[it.ID], SIGCONT);    
-
+ 
                      }
                      else{
                          wait_queue.emplace(it);
+                         kill(monitor_map[it.ID], SIGTSTP);
+                         std::cout<<"Child Process Suspend" << std::endl;
                      }
                  
              }
         }
         
         
-        if(pid!=0){         
-             sleep(1);          
+        if(pid!=0){       
+             sleep(1); 
              realtime++;
-             
+                          
         }
                         
     }
-    
+/*
     if(pid !=0){ 
         cout << "now time: " << realtime << " s" << endl;       
         while (1) {
@@ -240,6 +244,7 @@ void Scheduler::driveFIFO()
         }
 
     }
+ */
     
 }
 
@@ -298,16 +303,19 @@ void Scheduler::driveSJF1()
      
         cout << "now time: " << realtime << " s" << endl;    
         
-        while(!scheduler.empty() && realtime == scheduler.front().get_arr_time()){
+        while(!scheduler.empty() && realtime <= scheduler.front().get_arr_time()){
             auto it = scheduler.front();
             scheduler.pop();
-            
+                        
             if(monitor_map[it.ID]==0){
                 pid = fork();
                 if(pid == 0){
-                    Monitor* monitor = new Monitor(it);      
-                    cout << "Terminate the Parent Process: " << getpid() <<endl;    
-                    exit(0);          
+                    Monitor* monitor = new Monitor(it);                       
+                    cout << "Terminate the Parent Process: " << getpid() <<endl;     
+                    
+                    //kill(getpid(), SIGKILL);
+                    exit(0);
+  
                 }
                 else{ 
                     monitor_map[it.ID]=pid;
@@ -323,13 +331,12 @@ void Scheduler::driveSJF1()
                         
                          signal(SIGALRM, signal_nonpreem);
                          alarm(it.get_dur_time());
-                        
-                         sleep(0.2);
-                         kill(monitor_map[it.ID], SIGCONT);
  
                      }
                      else{
                          wait_queue.emplace(it);
+                         kill(monitor_map[it.ID], SIGTSTP);
+                         std::cout<<"Child Process Suspend" << std::endl;
                      }
                  
              }
@@ -356,7 +363,7 @@ void Scheduler::driveSJF1()
         }
 
     }
-   */  
+ */
 }
 
 void Scheduler::driveRR(){
@@ -444,56 +451,61 @@ void Scheduler::driveRR(){
     // execute
     int realtime = 0;
     int pid = 1;
+   
+    while(!stop_flag){
+     
+        cout << "now time: " << realtime << " s" << endl;    
         
-    while(!stop_flag)
-    { 
-         cout << "now time: " << realtime << " s" << endl;    
-         
-         while(!scheduler.empty() && realtime == scheduler.front().get_arr_time()){
-                auto it = scheduler.front();                      
-                scheduler.pop();
-             
-                if(monitor_map[it.ID]==0){
-                     pid = fork();
-                     if(pid == 0){
-                         Monitor* monitor = new Monitor(it);                  
-                     }
-                     else{
-                         monitor_map[it.ID]=pid;
-                     }
-                 }
-                  
-                 if(pid !=0){                                   
+        while(!scheduler.empty() && realtime <= scheduler.front().get_arr_time()){
+            auto it = scheduler.front();
+            scheduler.pop();
+                        
+            if(monitor_map[it.ID]==0){
+                pid = fork();
+                if(pid == 0){
+                    Monitor* monitor = new Monitor(it);                       
+                    cout << "Terminate the Parent Process: " << getpid() <<endl;     
+                    
+                    //kill(getpid(), SIGKILL);
+                    exit(0);
+  
+                }
+                else{ 
+                    monitor_map[it.ID]=pid;
+                }
+            }
+            
+            
+            if(pid !=0){     
+                                           
                      if(allow_preem){                 
                          allow_preem = false;                                  
                          this_job = it;
-                         
+                        
                          signal(SIGALRM, signal_RR);
                          alarm(it.get_dur_time());
-                            
-                         sleep(0.1);                
-                         kill(monitor_map[it.ID], SIGCONT);    
-                            
-                         //cout << "allo_preem " << allow_preem<<endl;
+ 
                      }
                      else{
                          wait_queue.emplace(it);
+                         kill(monitor_map[it.ID], SIGTSTP);
+                         std::cout<<"Child Process Suspend" << std::endl;
                      }
                  
-                 }
- 
-         }
-         
-         if(pid!=0){      
-             sleep(1);            
+             }
+        }
+        
+        
+        if(pid!=0){       
+             sleep(1); 
              realtime++;
-
-         }
+                          
+        }
                         
     }
-    
+/*
     if(pid !=0){ 
-        cout << "now time: " << realtime << " s" << endl;     
+        cout << "now time: " << realtime << " s" << endl;       
         while (1) {
             int result = wait(NULL);
             if (result == -1) {
@@ -504,6 +516,7 @@ void Scheduler::driveRR(){
         }
 
     }
+ */
         
 }
 
@@ -623,56 +636,61 @@ void Scheduler::driveSJF2(){
     // execute
     int realtime = 0;
     int pid = 1;
+   
+    while(!stop_flag){
+     
+        cout << "now time: " << realtime << " s" << endl;    
         
-    while(!stop_flag)
-    { 
-         cout << "now time: " << realtime << " s" << endl;    
-         
-         while(!scheduler.empty() && realtime == scheduler.front().get_arr_time()){
-                auto it = scheduler.front();                      
-                scheduler.pop();
-             
-                if(monitor_map[it.ID]==0){
-                     pid = fork();
-                     if(pid == 0){
-                         Monitor* monitor = new Monitor(it);                  
-                     }
-                     else{
-                         monitor_map[it.ID]=pid;
-                     }
-                 }
-                  
-                 if(pid !=0){                                   
+        while(!scheduler.empty() && realtime <= scheduler.front().get_arr_time()){
+            auto it = scheduler.front();
+            scheduler.pop();
+                        
+            if(monitor_map[it.ID]==0){
+                pid = fork();
+                if(pid == 0){
+                    Monitor* monitor = new Monitor(it);                       
+                    cout << "Terminate the Parent Process: " << getpid() <<endl;     
+                    
+                    //kill(getpid(), SIGKILL);
+                    exit(0);
+  
+                }
+                else{ 
+                    monitor_map[it.ID]=pid;
+                }
+            }
+            
+            
+            if(pid !=0){     
+                                           
                      if(allow_preem){                 
                          allow_preem = false;                                  
                          this_job = it;
-                         
+                        
                          signal(SIGALRM, signal_preemSJF);
                          alarm(it.get_dur_time());
-                            
-                         sleep(0.1);                
-                         kill(monitor_map[it.ID], SIGCONT);    
-                            
-                         //cout << "allo_preem " << allow_preem<<endl;
+ 
                      }
                      else{
                          wait_queue.emplace(it);
+                         kill(monitor_map[it.ID], SIGTSTP);
+                         std::cout<<"Child Process Suspend" << std::endl;
                      }
                  
-                 }
- 
-         }
-         
-         if(pid!=0){      
-             sleep(1);            
+             }
+        }
+        
+        
+        if(pid!=0){       
+             sleep(1); 
              realtime++;
-
-         }
+                          
+        }
                         
     }
-    
+/*
     if(pid !=0){ 
-        cout << "now time: " << realtime << " s" << endl;     
+        cout << "now time: " << realtime << " s" << endl;       
         while (1) {
             int result = wait(NULL);
             if (result == -1) {
@@ -683,6 +701,7 @@ void Scheduler::driveSJF2(){
         }
 
     }
+ */
     
 }
 
