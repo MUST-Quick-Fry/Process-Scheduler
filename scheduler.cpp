@@ -532,7 +532,8 @@ void Scheduler::driveRR(){
                      if(allow_preem){                 
                          allow_preem = false;                                  
                          this_job = it;
-                        
+                         
+                         kill(monitor_map[it.ID], SIGCONT);
                          signal(SIGALRM, signal_RR);
                          alarm(it.get_dur_time());
  
@@ -729,7 +730,8 @@ void Scheduler::driveSJF2(){
                      if(allow_preem){                 
                          allow_preem = false;                                  
                          this_job = it;
-                        
+                         
+                         kill(monitor_map[it.ID], SIGCONT);
                          signal(SIGALRM, signal_preemSJF);
                          alarm(it.get_dur_time());
  

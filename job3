@@ -1,5 +1,5 @@
 2	./sample/while1	3
 5	echo "hellp"	-1
 2	./sample/while1	6
-2	./sample/timer 2	-1
+2	./sample/while1	2
 
