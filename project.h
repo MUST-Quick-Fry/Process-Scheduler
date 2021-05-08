@@ -135,6 +135,7 @@ namespace Project{
         int get_total_time() const;
         int get_job_num() const;
         std::vector<Monitor> monitor_vector;
+        void find_dur_time(Job j, int& t);
         
     };
        
@@ -149,6 +150,7 @@ namespace Project{
     static std::vector<Job> job_queue; //job structure stored in vector
     static std::queue<Job> scheduler;
     static std::queue<Job> wait_queue;
+    static std::queue<Job> real_job_queue;
     static std::unordered_map<int, int> m; //monitor and its child job
     static std::unordered_map<int ,int> monitor_map; // main process and monitor process
   
@@ -170,7 +172,7 @@ namespace Project{
         else if(sig==SIGTERM){
             std::cout << "The Job terminate ... " << std::endl;
             //std::cout <<m[getpid()] << " child " <<std::endl;
-            kill(m[getpid()], SIGTERM);
+            kill(m[getpid()], SIGKILL);
             //signal(SIGTERM, sig_handler);
         }
         

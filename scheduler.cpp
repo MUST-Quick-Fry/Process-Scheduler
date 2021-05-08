@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <queue>
+#include <math.h>
 
 using namespace Project;
 using namespace std;
@@ -40,6 +41,24 @@ Scheduler::Scheduler(char *f, char *p) : policyInfo(p)
     choosePolicy();
     //sort(job_queue.begin(),job_queue.end());
     //schedulerDrive();
+}
+
+void Scheduler::find_dur_time(Job j, int& t){
+    long tps=sysconf(_SC_CLK_TCK);
+
+    tms start, end;
+    clock_t s, e;
+    s = times(&start);
+    int pID = fork();
+    if(pID == 0){ Monitor* monitor = new Monitor(j); exit(0);}
+    else{
+        waitpid(pID, 0, 0);
+        e = times(&end); 
+        double realtime = (double)(e-s)/tps;
+        
+        if(round(realtime)==0){t = 1;}
+        else{t= round(realtime);}
+    }
 }
 
 void Scheduler::normalizeCheck(string cont)
@@ -156,8 +175,16 @@ void Scheduler::driveFIFO()
     vector<Job> pq_arr;
     int len = get_job_num();
     int time = 0;
-     
+
+    // clear -1     
     for(int i = 0; i < len; ++i){
+        if(job_queue[i].get_dur_time()==-1){ 
+            int t = 0;
+            find_dur_time(job_queue[i], t);
+            //cout << t << endl;
+            job_queue[i].set_dur_time(t);
+        }
+
         pq_arr.emplace_back(job_queue[i]);  
     }
     
@@ -170,13 +197,20 @@ void Scheduler::driveFIFO()
         time += it.get_dur_time();
         scheduler.emplace(it);
     }
-    
-    // display
-    set_total_time(time);
-    Display(scheduler);
+   
+       
+    // copy
+    set_total_time(time);   
+    real_job_queue = scheduler;
+    cout << endl;
+    cout << endl;
     cout << endl;
     
     // execute
+    cout << "==================================================="<< endl;
+    cout << "Now start the Scheduler !!!"<< endl;
+    cout << "==================================================="<< endl;
+    
     int realtime = 0;
     int pid = 1;
    
@@ -184,7 +218,7 @@ void Scheduler::driveFIFO()
      
         cout << "now time: " << realtime << " s" << endl;    
         
-        while(!scheduler.empty() && realtime <= scheduler.front().get_arr_time()){
+        while(!scheduler.empty() && realtime >= scheduler.front().get_arr_time()){
             auto it = scheduler.front();
             scheduler.pop();
                         
@@ -231,20 +265,17 @@ void Scheduler::driveFIFO()
         }
                         
     }
-/*
+
     if(pid !=0){ 
         cout << "now time: " << realtime << " s" << endl;       
-        while (1) {
-            int result = wait(NULL);
-            if (result == -1) {
-                if (errno == EINTR) { continue;}
-
-                break;
-            }
-        }
+        sleep(2);
+        cout << endl;
+        cout << endl;
+        
+        // draw Gantt diagram
+        Display(real_job_queue);
 
     }
- */
     
 }
 
@@ -255,6 +286,16 @@ void Scheduler::driveSJF1()
     queue<Job> pq_arr;
     int len = get_job_num();
     int time = 0;
+
+    // clear -1        
+    for(int i = 0; i < len; ++i){
+        if(job_queue[i].get_dur_time()==-1){ 
+            int t = 0;
+            find_dur_time(job_queue[i], t);
+            //cout << t << endl;
+            job_queue[i].set_dur_time(t);
+        }
+    }
         
     sort(job_queue.begin(), job_queue.end(), [](const Job &a, const Job &b)->bool
     {   if(a.get_arr_time() == b.get_arr_time()){return a.get_dur_time() < b.get_dur_time();}
@@ -290,12 +331,18 @@ void Scheduler::driveSJF1()
         if(pq_arr.empty() && wait_q.empty()){break;}
     }
     
-    // display
+    // copy
     set_total_time(time);
-    Display(scheduler);
+    real_job_queue = scheduler;
+    cout << endl;
+    cout << endl;
     cout << endl;
     
     // execute
+    cout << "==================================================="<< endl;
+    cout << "Now start the Scheduler !!!"<< endl;
+    cout << "==================================================="<< endl;
+    
     int realtime = 0;
     int pid = 1;
    
@@ -303,7 +350,7 @@ void Scheduler::driveSJF1()
      
         cout << "now time: " << realtime << " s" << endl;    
         
-        while(!scheduler.empty() && realtime <= scheduler.front().get_arr_time()){
+        while(!scheduler.empty() && realtime >= scheduler.front().get_arr_time()){
             auto it = scheduler.front();
             scheduler.pop();
                         
@@ -350,20 +397,18 @@ void Scheduler::driveSJF1()
         }
                         
     }
-/*
+
     if(pid !=0){ 
         cout << "now time: " << realtime << " s" << endl;       
-        while (1) {
-            int result = wait(NULL);
-            if (result == -1) {
-                if (errno == EINTR) { continue;}
-
-                break;
-            }
-        }
+        sleep(2);
+        cout << endl;
+        cout << endl;
+        
+        // draw Gantt diagram
+        Display(real_job_queue);
 
     }
- */
+
 }
 
 void Scheduler::driveRR(){
@@ -372,6 +417,16 @@ void Scheduler::driveRR(){
     queue<Job> pq_arr;
     queue<Job> wait_q; 
     int len = get_job_num();
+    
+    // clear -1
+    for(int i = 0; i < len; ++i){
+        if(job_queue[i].get_dur_time()==-1){ 
+            int t = 0;
+            find_dur_time(job_queue[i], t);
+            //cout << t << endl;
+            job_queue[i].set_dur_time(t);
+        }
+    }
      
     sort(job_queue.begin(), job_queue.end());
      
@@ -433,22 +488,18 @@ void Scheduler::driveRR(){
     }
     
         
-    // display
+    // copy
     set_total_time(time);
-    Display(scheduler);
+    real_job_queue = scheduler;
+    cout << endl;
+    cout << endl;
     cout << endl;
     
-    /*
-    
-    // display
-    while(!scheduler.empty()){
-        cout << scheduler.front().ID << " " << scheduler.front().get_arr_time() << " " << scheduler.front().service_time_left << endl;
-        scheduler.pop();
-    }
-    
-    */
-    
     // execute
+    cout << "==================================================="<< endl;
+    cout << "Now start the Scheduler !!!"<< endl;
+    cout << "==================================================="<< endl;
+    
     int realtime = 0;
     int pid = 1;
    
@@ -456,7 +507,7 @@ void Scheduler::driveRR(){
      
         cout << "now time: " << realtime << " s" << endl;    
         
-        while(!scheduler.empty() && realtime <= scheduler.front().get_arr_time()){
+        while(!scheduler.empty() && realtime == scheduler.front().get_arr_time()){
             auto it = scheduler.front();
             scheduler.pop();
                         
@@ -503,20 +554,17 @@ void Scheduler::driveRR(){
         }
                         
     }
-/*
+
     if(pid !=0){ 
         cout << "now time: " << realtime << " s" << endl;       
-        while (1) {
-            int result = wait(NULL);
-            if (result == -1) {
-                if (errno == EINTR) { continue;}
-
-                break;
-            }
-        }
+        sleep(2);
+        cout << endl;
+        cout << endl;
+        
+        // draw Gantt diagram
+        Display(real_job_queue);
 
     }
- */
         
 }
 
@@ -526,6 +574,16 @@ void Scheduler::driveSJF2(){
     queue<Job> pq_arr; 
     priority_queue<Job,vector<Job>,greater<Job> > wait_q; 
     int len = get_job_num();
+
+    // clear -1
+    for(int i = 0; i < len; ++i){
+        if(job_queue[i].get_dur_time()==-1){ 
+            int t = 0;
+            find_dur_time(job_queue[i], t);
+            //cout << t << endl;
+            job_queue[i].set_dur_time(t);
+        }
+    }
          
     sort(job_queue.begin(), job_queue.end(), [](const Job &a, const Job &b)->bool
     {   if(a.get_arr_time() == b.get_arr_time()){return a.get_dur_time() < b.get_dur_time();}
@@ -627,13 +685,18 @@ void Scheduler::driveSJF2(){
     }
     
        
-    // display
+    // copy
     set_total_time(time);
-    Display(scheduler);
+    real_job_queue = scheduler;
+    cout << endl;
+    cout << endl;
     cout << endl;
     
-    
     // execute
+    cout << "==================================================="<< endl;
+    cout << "Now start the Scheduler !!!"<< endl;
+    cout << "==================================================="<< endl;
+    
     int realtime = 0;
     int pid = 1;
    
@@ -641,7 +704,7 @@ void Scheduler::driveSJF2(){
      
         cout << "now time: " << realtime << " s" << endl;    
         
-        while(!scheduler.empty() && realtime <= scheduler.front().get_arr_time()){
+        while(!scheduler.empty() && realtime >= scheduler.front().get_arr_time()){
             auto it = scheduler.front();
             scheduler.pop();
                         
@@ -688,20 +751,17 @@ void Scheduler::driveSJF2(){
         }
                         
     }
-/*
+    
     if(pid !=0){ 
         cout << "now time: " << realtime << " s" << endl;       
-        while (1) {
-            int result = wait(NULL);
-            if (result == -1) {
-                if (errno == EINTR) { continue;}
-
-                break;
-            }
-        }
+        sleep(2);
+        cout << endl;
+        cout << endl;
+        
+        // draw Gantt diagram
+        Display(real_job_queue);
 
     }
- */
     
 }
 
@@ -709,7 +769,6 @@ namespace Project
 {
     ostream &operator<<(ostream &out, const Scheduler &sc)
     {
-        out << "End" <<'\n';
         //out << "Totally " << sc.get_job_num() << " jobs\n";
         //out << '\n';
         //out << "-----------------------------------------------------------------------------------------------" << '\n';
