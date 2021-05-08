@@ -71,6 +71,7 @@ namespace Project{
 
     public:
         Monitor(Job j);
+        Monitor(char* command[]);
         Job job;
         void set_pid(int pid);
         void set_self_pid(int pid);

@@ -129,12 +129,46 @@ Monitor::Monitor(Job j):job(j)
     
 }
 
-/*
+
 Monitor::Monitor(char *command[]):command(command)
 {
-    execute_command(command);
+    int process;
+    int status;
+    
+    start = times(&t_start);
+    process = fork();
+
+    if(process < 0){
+        status = -1;
+    }
+    else if(process == 0){ 
+        //signal(SIGINT, SIG_DFL); //Default handle every child process
+        execvp(command[0],command);
+        throw invalid_argument("Fail to execute Child Process!\n");
+    }
+    else{
+        int status;
+        set_pid(process);
+        signal(SIGTSTP, sig_handler);
+        signal(SIGCONT, sig_handler);
+        signal(SIGTERM, sig_handler);
+        waitpid(process,&status,0);
+
+	// quit loop if the child process has been terminated!
+    }
+    
+     // calculate time
+    end = times(&t_end);  
+    set_timeElapsed(end-start);
+    set_userTime(t_end.tms_cutime);
+    set_systermTime(t_end.tms_cstime);
+    
+    // output 
+    cout << endl;        
+    cout << endl;
+    print_time();
 }
-*/
+
 
 void Monitor::set_self_pid(int pid){
     this->self_pid=pid;
