@@ -1,9 +1,20 @@
 # Process-Scheduler
-CO004 Projects on Operating Systems
+Project of CO004 Operating Systems
+
 # Author
-CHEN YUXUAN 1809853J-I011-0011 
-HE PEILIN 1809853U-I011-0078
-WANG YUYANG 1809853Z-I011-0045
+    CHEN YUXUAN 1809853J-I011-0011  
+    HE PEILIN 1809853U-I011-0078  
+    WANG YUYANG 1809853Z-I011-0045  
+
+# Team cooperation
+Tasks completed by each person are documented below:
+
+|Name|Task|
+|----|----------|
+|CHEN YUXUAN|Design the main framework , part of implementation of algorithms|
+|WANG YUYANG|Implementation of 4 scheduling algorithms, signal-handler and normalization check of job file|
+|HE PEILIN|Implementation of monitor time control, pretreat file description file and part of design the framework, report writing|
+
 # Introduction 
 In this project, we are proposed to design a simple process scheduler which be implemented with the function of
 jobs analysis with different parameters in `.txt` file and involution of process creation, suspension, as well as termination. 
@@ -14,7 +25,7 @@ We realize 4 scheduling algorithms :
 - Non-preemptive SJF
 - Preemptive SJF
 - RR 
-# JOb description file
+# Job description file
 The standard file format :
 >*[arrive time]* `\t` *[Job]* `\t` *[duration time]* `\n`
 
@@ -65,14 +76,7 @@ For **Phase 2**, with parameters :
 ```text
 ./Scheduler [filename] [policy] 
 ```
-# Team cooperation
-Tasks completed by each person are documented below:
 
-|Name|Task|
-|----|----------|
-|CHEN YUXUAN|Design the main framework , part of implementation of algorithms|
-|WANG YUYANG|Implementation of scheduling algorithm and signal-handler|
-|HE PEILIN|Implementation of monitor time control, pretreat file description file and part of design the framework |
 # Gantt Chart
 The Gantt Chart followed by job description file `./job4` as example.  
 ## FIFO
