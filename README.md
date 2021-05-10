@@ -13,7 +13,7 @@ Tasks completed by each person are documented below:
 |----|----------|
 |CHEN YUXUAN|Design the main framework , part of implementation of algorithms|
 |WANG YUYANG|Implementation of 4 scheduling algorithms, signal-handler and normalization check of job file|
-|HE PEILIN|Implementation of monitor time control, pretreat file description file and part of design the framework, report writing|
+|HE PEILIN|Implementation of monitor time control, pretreat job description file and part of design the framework, report writing|
 
 # Introduction 
 In this project, we are proposed to design a simple process scheduler which be implemented with the function of
@@ -40,7 +40,7 @@ set ff=unix
 |-------------------------|-------------------------------|
 |Operation System|ubuntu-20.04.1-desktop-amd64|
 |Programming Language| C++11 |
-
+|Compiler|g++ version 9.3.0 (Ubuntu 9.3.0-17ubuntu1~20.04)|
 ## Makefile
 You can easily compile the programme by `./Makefile` provided in root directory of this project using the command below :
 ```code
@@ -61,7 +61,7 @@ make clean
 How to compile two independent Phases :  
 - **Phase 1** (**Monitor**) : change the `target` in `./Makefile` as 
 >```text
-> target:=utils job monitor monitor_main
+> target:=job monitor monitor_main
 
 - **Phase 2** (**Scheduler**) : change the `target` in `./Makefile` as 
 >```text
@@ -76,7 +76,10 @@ For **Phase 2**, with parameters :
 ```text
 ./Scheduler [filename] [policy] 
 ```
-
+> The second argument `[policy]` only allows 4 choices in upper-case :
+> **FIFO SJF1 SJF2 RR** 
+> > **SJF1** : non-preemptive,
+> > **SJF2** : preemptive 
 # Gantt Chart
 The Gantt Chart followed by job description file `./job4` as example.  
 ## FIFO

@@ -12,7 +12,6 @@
 #include <algorithm>
 #include <queue>
 
-#define MAXJOBS 100000
 namespace Project{
     class Job
     {
@@ -158,19 +157,19 @@ namespace Project{
     static void sig_handler(int sig){
         std::cout << std::endl;
         if(sig==SIGTSTP){ 
-            std::cout << "The Job is suspended ..." << std::endl;
+            std::cout << "\033[34;1mThe Job is suspended ...\033[0m" << std::endl;
             //std::cout << m[getpid()]<< std::endl;
             kill(m[getpid()], SIGTSTP);         
             signal(SIGTSTP, sig_handler);
         }
         else if(sig==SIGCONT){ 
-            std::cout << "The Job resumes ... " << std::endl;
+            std::cout << "\033[32;1mThe Job resumes ... \033[0m" << std::endl;
             //std::cout <<m[getpid()] << std::endl;
             kill(m[getpid()], SIGCONT);
             signal(SIGCONT, sig_handler);
         }
         else if(sig==SIGTERM){
-            std::cout << "The Job terminate ... " << std::endl;
+            std::cout << "\033[31;1mThe Job terminate ... \033[0m" << std::endl;
             //std::cout <<m[getpid()] << " child " <<std::endl;
             kill(m[getpid()], SIGKILL);
             //signal(SIGTERM, sig_handler);
