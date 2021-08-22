@@ -62,10 +62,12 @@ How to compile two independent Phases :
 - **Phase 1** (**Monitor**) : change the `target` in `./Makefile` as 
 >```text
 > target:=job monitor monitor_main
+> EXEC:=Monitor
 
 - **Phase 2** (**Scheduler**) : change the `target` in `./Makefile` as 
 >```text
-> target:=utils job monitor scheduler main
+> target:=utils job monitor scheduler scheduler_main
+> EXEC:=Scheduler
 
 # Usage
 For **Phase 1**, with parameters :
