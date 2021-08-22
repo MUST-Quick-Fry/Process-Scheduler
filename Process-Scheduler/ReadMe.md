@@ -43,4 +43,4 @@ To set `ssh` when opening your devices :
 sudo systemctl enable ssh
 ```
 # Visual Studio Connecting to Linux
-To know more about configure, you can refer the website [readme file](readme/readme.html) or [Microsoft Doc](https://docs.microsoft.com/en-us/cpp/linux/connect-to-your-remote-linux-computer?view=msvc-160)
+To know more about configure, you can refer the website [readme file](https://must-quick-fry.github.io/Process-Scheduler/) or [Microsoft Doc](https://docs.microsoft.com/en-us/cpp/linux/connect-to-your-remote-linux-computer?view=msvc-160)
