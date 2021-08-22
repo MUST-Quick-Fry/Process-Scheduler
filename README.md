@@ -38,9 +38,11 @@ set ff=unix
 ## Environment
 |Attribute|Content|
 |-------------------------|-------------------------------|
-|Operation System|ubuntu-20.04.1-desktop-amd64|
-|Programming Language| C++11 |
-|Compiler|g++ version 9.3.0 (Ubuntu 9.3.0-17ubuntu1~20.04)|
+|*Operation System*|ubuntu-20.04.1-desktop-amd64|
+|*Programming Language*| C++11 |
+|*Compiler*|g++ version 9.3.0 (Ubuntu 9.3.0-17ubuntu1~20.04)|
+|*IDE Platform*|Microsoft Visual Studio Community 2019 Version 16.8.3 (Linux Develop)|
+> For more specific information regarding the authoring `C++` code for Linux servers, desktops and devices, just click [:cactus:](Process-Scheduler/ReadMe.md)
 ## Makefile
 You can easily compile the programme by `./Makefile` provided in root directory of this project using the command below :
 ```code
@@ -59,17 +61,17 @@ And delete `*.d` ,`*.o` files and the executable file using command below :
 make clean
 ```
 How to compile two independent Phases :  
-- **Phase 1** (**Monitor**) : change the `target` in `./Makefile` as 
+- **Phase 1** (**Monitor**) : change the parameters `target` and `EXEC` in `./Makefile` as 
 >```text
 > target:=job monitor monitor_main
 > EXEC:=Monitor
 
-- **Phase 2** (**Scheduler**) : change the `target` in `./Makefile` as 
+- **Phase 2** (**Scheduler**) : change the parameters `target` and `EXEC` in `./Makefile` as 
 >```text
 > target:=utils job monitor scheduler scheduler_main
 > EXEC:=Scheduler
 
-# Usage
+## CMD Usage
 For **Phase 1**, with parameters :
 ```text
 ./Monitor [command string]
@@ -83,7 +85,7 @@ For **Phase 2**, with parameters :
 > > **SJF1** : non-preemptive,
 > > **SJF2** : preemptive 
 # Gantt Chart
-The Gantt Chart followed by job description file `./job4` as example.  
+The Gantt Chart followed by job description file `./job_list_example/job4` as example.  
 ## FIFO
 ``` text
 Totally 8 jobs, Time using: 23 s
