@@ -214,6 +214,16 @@ Tasks completed by each person are documented below:
 |Wang, Yuyang (1809853Z-I011-0045)|Implementation of four scheduling algorithms, signal-handler and normalization check of job file|
 |He, Peilin (1809853U-I011-0078)|Implementation of monitor time control, pretreat job description file and part of design the framework, report writing|
 
+Sincerely thank our team for the great support, understandings and involvements. 
+
+<table>
+  <tr>
+    <td align="center"><a href="https://github.com/Tim-eyes"><img src="https://avatars.githubusercontent.com/u/53691717?&v=4" width="100px;" alt=""/><br /><sub><b>@Tim-eyes</b></sub></a><br /><a href="#translation-s8321414" title="Translation"><br />🌍</a></td>
+    <td align="center"><a href="https://github.com/KennardWang"><img src="https://avatars.githubusercontent.com/u/57723061?v=4" width="100px;" alt=""/><br /><sub><b>@KennardWang</b></sub></a><br /><a href="#platform-Sandural" title="Packaging/porting to new platform"><br /><img src="https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?logo=buy-me-a-coffee&logoColor=black" /></a></td>
+    <td align="center"><a href="https://github.com/goodkillerchen"><img src="https://avatars.githubusercontent.com/u/58941606?v=4" width="100px;" alt=""/><br /><sub><b>@goodkillerchen</b></sub></a><br /><a href="https://github.com/CopyTranslator/CopyTranslator/commits?author=Andy-AO" title="Code"><br />💻</a></td>
+  </tr>
+</table>
+
 Feel free to [open an issue](https://github.com/MUST-Quick-Fry/Process-Scheduler/issues) or submit [PRs](https://github.com/MUST-Quick-Fry/Process-Scheduler/pulls).
 
 
